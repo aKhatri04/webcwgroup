@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.urls import reverse
+
 
 # Create your models here.
 class Hobby (models.Model):
@@ -33,6 +35,37 @@ class CustomUser(AbstractUser):
             "hobbies": [hobby.as_dict() for hobby in self.hobbies.all()]
         }
         
+class UserHobby(models.Model):
+    """
+    A model representing the relationship between a user and a hobby.
+
+    Attributes:
+        user (ForeignKey): The user who has the hobby.
+        hobby (ForeignKey): The hobby assigned to the user.
+    Methods:
+        __str__(): Returns a string representation of the user's hobby.
+        as_dict(): Returns a dictionary representation of the user-hobby relationship.
+    """
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    hobby = models.ForeignKey(Hobby, on_delete=models.CASCADE)
+
+
+    def __str__(self):
+        return f"{self.user.username} enjoys {self.hobby.name}"
+
+    def as_dict(self):
+        return {
+            "id": self.id,
+            "user": {
+                "id": self.user.id,
+                "username": self.user.username,
+                "name": self.user.name,
+                "email": self.user.email,
+            },
+            "hobby": self.hobby.as_dict(),
+            "api": reverse('user-hobby-api', args=[self.id]),
+        }
+
 class PageView(models.Model):
     count = models.IntegerField(default=0)
 
