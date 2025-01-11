@@ -8,11 +8,7 @@ def main_spa(request: HttpRequest) -> HttpResponse:
     return render(request, 'api/spa/index.html', {})
 
 #Hobby API
-<<<<<<< Updated upstream
 def hobby_api(request):
-=======
-def hobbies_api(request):
->>>>>>> Stashed changes
     """
     Handles POST request for managing hobby.
     """  
@@ -54,11 +50,7 @@ def hobby_api(request,hobby_id):
     return JsonResponse(hobby.as_dict())
 
 #User API
-<<<<<<< Updated upstream
 def user_api(request):
-=======
-def users_api(request):
->>>>>>> Stashed changes
     if request.method == "POST":
         POST = json.loads(request.body)
         user = CustomUser.objects.create(
@@ -92,34 +84,15 @@ def user_api(request,user_id):
             user.name = data["name", user.name]
             user.email = data["email", user.email]
             user.date_of_birth = data["date_of_birth", user.date_of_birth]
-<<<<<<< Updated upstream
-=======
-
->>>>>>> Stashed changes
             
             if 'password' in data and data['password']:
                 user.set_password(data['password'])
                 
             user.save()
-<<<<<<< Updated upstream
-=======
-            
-            if 'hobbies' in data:
-                # Clear existing hobbies and add new ones
-                user.userhobby_set.all().delete()
-                for hobby_data in data['hobbies']:
-                    hobby, _ = Hobby.objects.get_or_create(name=hobby_data['name'])
-                    UserHobby.objects.create(user=user, hobby=hobby)
-
->>>>>>> Stashed changes
             return JsonResponse(user.as_dict())
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=400)
         
-<<<<<<< Updated upstream
-=======
-        
->>>>>>> Stashed changes
     if request.method == "DELETE":
         user.delete()
         return JsonResponse({"message": "User deleted"})
@@ -128,11 +101,7 @@ def user_api(request,user_id):
 
 #User-Hobby API through model
 
-<<<<<<< Updated upstream
 def user_hobby_api(request):
-=======
-def user_hobbies_api(request):
->>>>>>> Stashed changes
     if request.method == "POST":
         POST = json.loads(request.body) #get info for request
         try:

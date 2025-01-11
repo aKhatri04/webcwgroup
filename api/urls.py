@@ -23,12 +23,9 @@ from .views import hobby_api, hobbies_api, users_api, user_api, user_hobbies_api
 
 urlpatterns = [
     path('', main_spa),
-<<<<<<< Updated upstream
-    path('admin/', admin.site.urls),
-    path('api/', include('api.urls'))
-]
-=======
     # API entry points should be defined here
+    path('admin/', admin.site.urls),
+    path('api/', include('api.urls')),
     path('hobbies/', hobbies_api, name='hobbies api'),
     path('hobby/<int:hobby_id>', hobby_api, name='hobby api'),
     path('users/', users_api, name='users api'),
@@ -36,4 +33,3 @@ urlpatterns = [
     path('user_hobbies/', user_hobbies_api, name='user hobbies api'),
     path('user_hobby/<int:user_hobby_id>', user_hobbies_api, name='user hobby api'),
 ]
->>>>>>> Stashed changes
