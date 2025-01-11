@@ -32,6 +32,7 @@ class CustomUser(AbstractUser):
     password = models.CharField(max_length=100)
 
     def __str__(self):
+        
         return self.username
     
     def as_dict(self):
