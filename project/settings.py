@@ -37,7 +37,7 @@ ALLOWED_HOSTS = ['*']
 
 
 # use a custom user model
-AUTH_USER_MODEL = 'users.CustomUser'
+AUTH_USER_MODEL = 'api.CustomUser'
 
 # Application definition
 
@@ -48,7 +48,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'users'
     'api',
 ]
 
