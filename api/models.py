@@ -1,11 +1,19 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-from django.urls import reverse
+from django.urls import reverse # for reverse URL generation
 
 
 # Create your models here.
 class Hobby (models.Model):
+    
+    """
+    Represents a hobby.
+
+    Attributes:
+        name (str): The name of the hobby.
+    """
     name = models.CharField(max_length=100, unique=True)
+
 
     def __str__(self):
         return self.name
@@ -21,6 +29,7 @@ class CustomUser(AbstractUser):
     email = models.EmailField(unique=True)
     date_of_birth = models.DateField(blank=True, null=True)
     hobbies = models.ManyToManyField(Hobby, blank=True)
+    password = models.CharField(max_length=100)
 
     def __str__(self):
         return self.username
@@ -32,7 +41,9 @@ class CustomUser(AbstractUser):
             "name": self.name,
             "email": self.email,
             "date_of_birth": self.date_of_birth,
-            "hobbies": [hobby.as_dict() for hobby in self.hobbies.all()]
+            "password": self.password,
+            "hobbies": [hobby.as_dict() for hobby in self.hobbies.all()],
+            "api": reverse('user-api', args=[self.id]),
         }
         
 class UserHobby(models.Model):
@@ -56,12 +67,7 @@ class UserHobby(models.Model):
     def as_dict(self):
         return {
             "id": self.id,
-            "user": {
-                "id": self.user.id,
-                "username": self.user.username,
-                "name": self.user.name,
-                "email": self.user.email,
-            },
+            "user": self.user.as_dict(),
             "hobby": self.hobby.as_dict(),
             "api": reverse('user-hobby-api', args=[self.id]),
         }
