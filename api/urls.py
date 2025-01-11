@@ -22,4 +22,6 @@ from .views import main_spa
 
 urlpatterns = [
     path('', main_spa),
+    path('admin/', admin.site.urls),
+    path('api/', include('api.urls'))
 ]
