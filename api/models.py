@@ -83,3 +83,34 @@ class PageView(models.Model):
 
     def __str__(self):
         return f"Page view count: {self.count}"
+
+
+class FriendRequest(models.Model):
+    """
+    Represents a friend request.
+
+    Attributes:
+        from_user (CustomUser): The user who sent the request.
+        to_user (CustomUser): The user receiving the request.
+        is_accepted (bool): Whether the request has been accepted.
+        created_at (datetime): When the request was created.
+    """
+    from_user = models.ForeignKey(CustomUser, related_name='sent_friend_requests', on_delete=models.CASCADE)
+    to_user = models.ForeignKey(CustomUser, related_name='received_friend_requests', on_delete=models.CASCADE)
+    is_accepted = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('from_user', 'to_user')
+
+    def __str__(self):
+        return f"{self.from_user.username} -> {self.to_user.username} ({'Accepted' if self.is_accepted else 'Pending'})"
+
+    def as_dict(self):
+        return {
+            "id": self.id,
+            "from_user": self.from_user.as_dict(),
+            "to_user": self.to_user.as_dict(),
+            "is_accepted": self.is_accepted,
+            "created_at": self.created_at.isoformat(),
+        }
