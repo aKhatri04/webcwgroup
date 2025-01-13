@@ -18,7 +18,7 @@ class Hobby(models.Model):
     def as_dict(self):
         return {"id":self.id, 
                 "name":self.name, 
-                "api": reverse('hobby-api', args=[self.id]),
+                "api": reverse('hobby_api', args=[self.id]),
                 }
 
 class CustomUser(AbstractUser):
@@ -48,7 +48,7 @@ class CustomUser(AbstractUser):
                 "email":self.email, 
                 "date_of_birth":self.date_of_birth, 
                 "hobbies":[[hobby.id, hobby.name] for hobby in self.hobbies.all()],
-                "api": reverse('user-api', args=[self.id]),
+                "api": reverse('user_api', args=[self.id]),
                 }
     
     def current_as_dict(self):
@@ -74,7 +74,7 @@ class UserHobby(models.Model):
             "id":self.id, 
                 "user": self.user.as_dict(),
                 "hobby":self.hobby.as_dict(),
-                "api": reverse('user-hobby-api', args=[self.id]),
+                "api": reverse('user_hobby_api', args=[self.id]),
         }
 
 

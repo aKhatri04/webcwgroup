@@ -4,6 +4,12 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from .forms import SignupForm, LoginForm
 from.models import Hobby, CustomUser, UserHobby
+from django.views.decorators.csrf import csrf_exempt
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
+
 
 
 from django.contrib.auth import get_user_model
@@ -49,6 +55,7 @@ def main_spa(request: HttpRequest) -> HttpResponse:
     return render(request, 'api/spa/base.html', {})
 
 #Hobby API
+@csrf_exempt  # Exempt this view from CSRF checks
 def hobbies_api(request):
     """
     Handles POST request for managing hobby.
@@ -67,6 +74,7 @@ def hobbies_api(request):
             ]
     })
     
+@csrf_exempt 
 def hobby_api(request,hobby_id):
     #check if hobby exists GET
     try:
@@ -91,6 +99,7 @@ def hobby_api(request,hobby_id):
     return JsonResponse(hobby.as_dict())
 
 #User API
+@csrf_exempt 
 def users_api(request):
     if request.method == "POST":
         POST = json.loads(request.body)
@@ -110,6 +119,7 @@ def users_api(request):
             ]
     })
     
+@csrf_exempt 
 def user_api(request,user_id):
     #check if user exists GET
     try:
@@ -150,6 +160,7 @@ def user_api(request,user_id):
     
     return JsonResponse(user.as_dict())
 
+@csrf_exempt 
 #User-Hobby API through model
 
 def user_hobbies_api(request):
@@ -176,7 +187,8 @@ def user_hobbies_api(request):
             for user_hobby in UserHobby.objects.all()
             ]
     })
-    
+ 
+@csrf_exempt    
 def user_hobby_api(request, user_hobby_id):
     #check if user_hobby exists GET
     try:
