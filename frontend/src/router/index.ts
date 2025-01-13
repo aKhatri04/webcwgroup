@@ -10,6 +10,8 @@ import OtherPage from '../pages/OtherPage.vue';
 import ProfilePage from '../pages/ProfilePage.vue';
 
 
+
+
 let base = (import.meta.env.MODE == 'development') ? import.meta.env.BASE_URL : ''
 
 // 2. Define some routes
@@ -20,7 +22,7 @@ const router = createRouter({
     routes: [
         { path: '/', name: 'Main Page', component: MainPage },
         { path: '/other/', name: 'Other Page', component: OtherPage },
-        { path: '/profile/', name: 'Profile Page', component: ProfilePage },  // Profile page route
+        {path: '/profile/', name: 'Profile Page', component: ProfilePage}
 
     ]
 })
