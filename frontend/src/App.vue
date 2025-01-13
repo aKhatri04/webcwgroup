@@ -22,11 +22,20 @@
 <script lang="ts">
 import { defineComponent } from "vue";
 import { RouterView } from "vue-router";
+import { useUserStore } from "@/store/userStore"; // Import Pinia store
 
 export default defineComponent({
     components: { RouterView },
-});
+    setup() {
+        const userStore = useUserStore();
 
+        // Hardcode currentUserId for testing
+        userStore.setCurrentUserId(1); // Replace 1 with a valid user ID from your database
+        console.log("Hardcoded currentUserId:", userStore.currentUserId); // Debugging output
+
+        return {};
+    },
+});
 </script>
 
 <style scoped>

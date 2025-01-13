@@ -16,10 +16,14 @@ class Hobby(models.Model):
         return self.name
     
     def as_dict(self):
-        return {"id":self.id, 
-                "name":self.name, 
-                "api": reverse('hobby-api', args=[self.id]),
-                }
+        return {
+            "id": self.id,
+            "name": self.name,
+            "email": self.email,
+            "date_of_birth": self.date_of_birth,
+            "hobbies": [hobby.name for hobby in self.hobbies.all()],  # List of hobby names
+            "api": reverse('user-api', args=[self.id]),
+        }
 
 class CustomUser(AbstractUser):
     
@@ -42,14 +46,14 @@ class CustomUser(AbstractUser):
         return self.username
 
     def as_dict(self):
-        
-        return {"id":self.id, 
-                "name":self.name, 
-                "email":self.email, 
-                "date_of_birth":self.date_of_birth, 
-                "hobbies":[[hobby.id, hobby.name] for hobby in self.hobbies.all()],
-                "api": reverse('user-api', args=[self.id]),
-                }
+        return {
+            "id": self.id,
+            "name": self.name,
+            "email": self.email,
+            "date_of_birth": self.date_of_birth,
+            "hobbies": [hobby.name for hobby in self.hobbies.all()],  # Only hobby names
+            "api": reverse('user-api', args=[self.id]),
+        }
     
     def current_as_dict(self):
         return {"id":self.id, 

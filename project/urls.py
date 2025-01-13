@@ -17,10 +17,13 @@ from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path
 from django.http import HttpResponse
+from api.views import users_api, user_api
 
 
 urlpatterns = [
     path('', include('api.urls')),
     path('health', lambda request: HttpResponse("OK")),
     path('admin/', admin.site.urls),
+    path('users/', users_api, name='users_api'),
+    path('user/<int:user_id>/', user_api, name='user-api'),
 ]
