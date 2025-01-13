@@ -20,10 +20,15 @@ from django.http import HttpResponse
 
 from .views import hobby_api, hobbies_api, users_api, user_api, user_hobbies_api, main_spa
 from .views import main_spa
+from . import views
 
 urlpatterns = [
     path('', main_spa),
+
     # API entry points should be defined here
+    path('login/', views.user_login, name='login'),
+    path('signup/', views.user_signup, name='signup'),
+    path('logout/', views.user_logout, name='logout'),
     path('hobbies/', hobbies_api, name='hobbies api'),
     path('hobby/<int:hobby_id>', hobby_api, name='hobby api'),
     path('users/', users_api, name='users api'),
