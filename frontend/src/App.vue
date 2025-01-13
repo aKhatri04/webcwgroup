@@ -20,6 +20,12 @@
             >
                 Profile Page
             </router-link>
+            <router-link
+                class=""
+                :to="{name: 'Friend Page'}"
+            >
+                Friend Page
+            </router-link>
         </div>
         <RouterView class="flex-shrink-0" />
     </main>
