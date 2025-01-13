@@ -5,11 +5,6 @@ from django.contrib.auth import authenticate, login, logout
 from .forms import SignupForm, LoginForm
 from.models import Hobby, CustomUser, UserHobby
 from django.views.decorators.csrf import csrf_exempt
-<<<<<<< Updated upstream
-=======
-
->>>>>>> Stashed changes
-
 
 
 from django.contrib.auth import get_user_model
