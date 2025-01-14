@@ -207,3 +207,50 @@ def user_hobby_api(request, user_hobby_id):
     
     return JsonResponse(user_hobby.as_dict())
 
+from django.contrib.auth.decorators import login_required
+
+
+@login_required
+def current_user_api(request):
+    # Check if the user is authenticated
+    try:
+        user = request.user
+        if not user.is_authenticated:
+            return JsonResponse({"message": "User is not authenticated"}, status=403)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+    # Handles GET request to fetch current user data
+    if request.method == "GET":
+        return JsonResponse(user.as_dict())
+
+    # Handles PUT request to update the current user's details
+    if request.method == "PUT":
+        try:
+            data = json.loads(request.body)
+            user.name = data.get("name", user.name)
+            user.email = data.get("email", user.email)
+            user.date_of_birth = data.get("date_of_birth", user.date_of_birth)
+
+            if "password" in data and data["password"]:
+                user.set_password(data["password"])
+
+            user.save()
+
+            # Handle hobbies if provided
+            if "hobbies" in data:
+                user.userhobby_set.all().delete()
+                for hobby_data in data["hobbies"]:
+                    hobby, _ = Hobby.objects.get_or_create(name=hobby_data["name"])
+                    UserHobby.objects.create(user=user, hobby=hobby)
+
+            return JsonResponse(user.as_dict())
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=400)
+
+    # Handles DELETE request to delete the current user
+    if request.method == "DELETE":
+        user.delete()
+        return JsonResponse({"message": "User deleted"})
+
+    return JsonResponse({"message": "Unsupported request method"}, status=405)
