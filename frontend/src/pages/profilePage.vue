@@ -75,6 +75,10 @@
                 </span>
               </div>
             </div>
+            <div class="mb-3">
+              <label for="password" class="form-label">Password (leave blank to keep the same)</label>
+              <input v-model="updatedUser.password" type="password" class="form-control" id="password" />
+            </div>
             <div class="modal-footer">
               <button class="btn btn-secondary" @click="cancelEdit">Close</button>
               <button class="btn btn-primary" @click="saveChanges">Save Changes</button>
