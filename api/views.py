@@ -223,7 +223,16 @@ def current_user_api(request):
 
     # Handles GET request to fetch current user data
     if request.method == "GET":
-        return JsonResponse(user.as_dict())
+        # Add hobbies to the user data
+        hobbies = [{"id": hobby.id, "name": hobby.name} for hobby in user.hobbies.all()]
+        user_data = {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "date_of_birth": str(user.date_of_birth),
+            "hobbies": hobbies  # Include hobbies in the response
+        }
+        return JsonResponse(user_data)
 
     # Handles PUT request to update the current user's details
     if request.method == "PUT":
@@ -245,7 +254,17 @@ def current_user_api(request):
                     hobby, _ = Hobby.objects.get_or_create(name=hobby_data["name"])
                     UserHobby.objects.create(user=user, hobby=hobby)
 
-            return JsonResponse(user.as_dict())
+            # Return the updated user data with hobbies
+            hobbies = [{"id": hobby.id, "name": hobby.name} for hobby in user.hobbies.all()]
+            updated_user_data = {
+                "id": user.id,
+                "name": user.name,
+                "email": user.email,
+                "date_of_birth": str(user.date_of_birth),
+                "hobbies": hobbies
+            }
+
+            return JsonResponse(updated_user_data)
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=400)
 

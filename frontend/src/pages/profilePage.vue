@@ -14,28 +14,30 @@
       <table v-if="!loading" class="table">
         <thead>
           <tr>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Date of Birth</th>
-            <th>Hobbies</th>
-            <th>Edit</th>
+            <th>Name: </th>
+            <td>{{ updatedUser.name }}</td>
+            </tr>
+            <tr>
+                <th>Email: </th>
+                <td>{{ updatedUser.email }}</td>
+            </tr>
+            <tr>
+                <th>Date of Birth: </th>
+                <td>{{ updatedUser.date_of_birth }}</td>
+            </tr>
+            <tr>
+                <th>Hobbies: </th>
+                <td>
+                    <span v-for="hobby in updatedUser.hobbies" :key="hobby.id" class="badge bg-secondary me-1">
+                        {{ hobby.name }}
+                    </span>
+                </td>
+                <td>              
+                    <button class="btn btn-sm btn-primary" @click="editProfile">Edit</button>
+                </td>
           </tr>
         </thead>
-        <tbody>
-          <tr v-if="user">
-            <td>{{ user.name }}</td>
-            <td>{{ user.email }}</td>
-            <td>{{ user.date_of_birth }}</td>
-            <td>
-              <span v-for="hobby in user.hobbies" :key="hobby.id" class="badge bg-secondary me-1">
-                {{ hobby.name }}
-              </span>
-            </td>
-            <td>
-              <button class="btn btn-sm btn-primary" @click="editProfile">Edit</button>
-            </td>
-          </tr>
-        </tbody>
+
       </table>
   
       <!-- Edit Form Modal -->
@@ -96,7 +98,7 @@
   export default defineComponent({
     setup() {
       const userStore = useUserStore();
-      const editing = ref(false);
+      const editing = ref(true);
       const selectedHobby = ref<{ id: number; name: string } | null>(null);
       const newHobbyName = ref("");
       const updatedUser = ref({ ...userStore.user });
