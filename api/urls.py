@@ -18,17 +18,28 @@ from django.contrib import admin
 from django.urls import include, path
 from django.http import HttpResponse
 
-from .views import hobby_api, hobbies_api, users_api, user_api, user_hobbies_api, main_spa
+from .views import hobby_api, hobbies_api, users_api, user_api, user_hobbies_api, main_spa, send_friend_request, view_friend_requests, handle_friend_request
 from .views import main_spa
+from . import views
 
 urlpatterns = [
     path('', main_spa),
+
     # API entry points should be defined here
-    path('hobbies/', hobbies_api, name='hobbies api'),
-    path('hobby/<int:hobby_id>', hobby_api, name='hobby api'),
-    path('users/', users_api, name='users api'),
-    path('user/<int:user_id>', user_api, name='user api'),
-    path('user_hobbies/', user_hobbies_api, name='user hobbies api'),
-    path('user_hobby/<int:user_hobby_id>', user_hobbies_api, name='user hobby api'),
+
+    path('login/', views.user_login, name='login'),
+    path('signup/', views.user_signup, name='signup'),
+    path('logout/', views.user_logout, name='logout'),
+    
+    path('hobbies/', hobbies_api, name='hobbies_api'),
+    path('hobby/<int:hobby_id>', hobby_api, name='hobby_api'),
+    path('users/', users_api, name='users_api'),
+    path('user/<int:user_id>', user_api, name='user_api'),
+    path('user_hobbies/', user_hobbies_api, name='user hobbies_api'),
+    path('user_hobby/<int:user_hobby_id>', user_hobbies_api, name='user_hobby_api'),
+    # Friend Request API
+    path('friend-request/send/', send_friend_request, name='send_friend_request'),
+    path('friend-requests/', view_friend_requests, name='view_friend_requests'),
+    path('friend-request/handle/', handle_friend_request, name='handle_friend_request'),
 ]
 

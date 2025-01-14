@@ -1,12 +1,53 @@
 import json
 from django.http import HttpResponse, HttpRequest, JsonResponse
-from django.shortcuts import render
-from .models import Hobby, CustomUser, UserHobby
+from django.shortcuts import render, redirect
+from.models import Hobby, CustomUser, UserHobby, FriendRequest
 from django.core.paginator import Paginator
 from datetime import date
 from django.db.models import F, Count, Q
 from collections import defaultdict
+from django.contrib.auth import authenticate, login, logout, get_user_model
+from .forms import SignupForm, LoginForm
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 
+
+User = get_user_model()
+
+# Home page
+def index(request):
+    return render(request, 'api/spa/index.html')
+
+# signup page
+def user_signup(request):
+    if request.method == 'POST':
+        form = SignupForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('login')
+    else:
+        form = SignupForm()
+    return render(request, 'api/spa/signup.html', {'form': form})
+
+# login page
+def user_login(request):
+    if request.method == 'POST':
+        form = LoginForm(request.POST)
+        if form.is_valid():
+            username = form.cleaned_data['username']
+            password = form.cleaned_data['password']
+            user = authenticate(request, username=username, password=password)
+            if user:
+                login(request, user)    
+                return redirect(main_spa)
+    else:
+        form = LoginForm()
+    return render(request, 'api/spa/login.html', {'form': form})
+
+# logout page
+def user_logout(request):
+    logout(request)
+    return redirect('login')
 
 def main_spa(request: HttpRequest) -> HttpResponse:
     """
@@ -57,49 +98,80 @@ def hobby_api(request, hobby_id):
 
     return JsonResponse(hobby.as_dict())
 
+#User API
 
-# User API
 def users_api(request):
     """
-    API to fetch paginated users and group them by hobbies.
+    Handles user creation (POST) and filtered/paginated user retrieval (GET).
     """
-    try:
-        # Query parameters
-        age_min = int(request.GET.get("age_min", 0))
-        age_max = int(request.GET.get("age_max", 120))
-        page_number = int(request.GET.get("page", 1))
+    if request.method == "POST":
+        try:
+            POST = json.loads(request.body)
+            # Create a new user
+            user = CustomUser.objects.create(
+                username=POST['username'],
+                name=POST['name'],
+                email=POST['email'],
+                date_of_birth=POST['date_of_birth'],
+            )
+            user.set_password(POST['password'])  # Hash the password
+            user.save()
+            return JsonResponse(user.as_dict(), status=201)  # Return created user
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=400)
 
-        # Get all users and filter by age
-        today = date.today()
-        users = CustomUser.objects.annotate(
-            age=today.year - F("date_of_birth__year"),
-            common_hobbies=Count("hobbies", filter=Q(hobbies__in=CustomUser.objects.get(id=request.GET.get("current_user_id")).hobbies.all())),
-        ).filter(
-            age__gte=age_min,
-            age__lte=age_max,
-        ).order_by("-common_hobbies")
+    if request.method == "GET":
+        try:
+            # Query parameters
+            age_min = int(request.GET.get("age_min", 0))
+            age_max = int(request.GET.get("age_max", 120))
+            page_number = int(request.GET.get("page", 1))
+            current_user_id = request.GET.get("current_user_id")
 
-        # Apply pagination
-        paginator = Paginator(users, 10)
-        page_obj = paginator.get_page(page_number)
+            # Ensure current user exists for matching hobbies
+            if not current_user_id:
+                return JsonResponse({"error": "current_user_id is required"}, status=400)
+            try:
+                current_user = CustomUser.objects.get(id=current_user_id)
+            except CustomUser.DoesNotExist:
+                return JsonResponse({"error": "Current user not found"}, status=404)
 
-        return JsonResponse({
-            "users": [
-                {
-                    **user.as_dict(),
-                    "common_hobbies": user.common_hobbies  # Include shared hobbies count
-                }
-                for user in page_obj.object_list
-            ],
-            "total_pages": paginator.num_pages,
-            "current_page": page_obj.number,
-            "total_users": paginator.count,
-        })
-    except Exception as e:
-        return JsonResponse({"error": str(e)}, status=500)
+            # Get all users and filter by age
+            today = date.today()
+            users = CustomUser.objects.exclude(id=current_user.id).annotate(
+                age=today.year - F("date_of_birth__year"),
+                common_hobbies=Count(
+                    "hobbies",
+                    filter=Q(hobbies__in=current_user.hobbies.all())
+                ),
+            ).filter(
+                age__gte=age_min,
+                age__lte=age_max,
+            ).order_by("-common_hobbies")
 
+            # Apply pagination
+            paginator = Paginator(users, 10)
+            page_obj = paginator.get_page(page_number)
 
-def user_api(request, user_id):
+            # Return paginated users
+            return JsonResponse({
+                "users": [
+                    {
+                        **user.as_dict(),
+                        "common_hobbies": user.common_hobbies  # Include shared hobbies count
+                    }
+                    for user in page_obj.object_list
+                ],
+                "total_pages": paginator.num_pages,
+                "current_page": page_obj.number,
+                "total_users": paginator.count,
+            })
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+
+    return JsonResponse({"error": "Unsupported HTTP method"}, status=405)
+    
+def user_api(request,user_id):
     """
     Handles GET, PUT, and DELETE requests for a specific user.
     """
@@ -189,3 +261,76 @@ def user_hobby_api(request, user_hobby_id):
         return JsonResponse({"message": "User-Hobby deleted"})
 
     return JsonResponse(user_hobby.as_dict())
+
+@login_required
+@require_POST
+def send_friend_request(request: HttpRequest) -> JsonResponse:
+    """
+    Sends a friend request from the logged-in user to another user.
+
+    Request body:
+        - to_user_id (int): The ID of the user to whom the request is being sent.
+    """
+    try:
+        data = json.loads(request.body)
+        to_user = CustomUser.objects.get(id=data['to_user_id'])
+        from_user = request.user
+
+        # Check if the request already exists
+        if FriendRequest.objects.filter(from_user=from_user, to_user=to_user).exists():
+            return JsonResponse({'error': 'Friend request already sent'}, status=400)
+
+        # Create the friend request
+        friend_request = FriendRequest.objects.create(from_user=from_user, to_user=to_user)
+        return JsonResponse(friend_request.as_dict(), status=201)
+
+    except CustomUser.DoesNotExist:
+        return JsonResponse({'error': 'User not found'}, status=404)
+    except KeyError:
+        return JsonResponse({'error': 'Invalid request payload'}, status=400)
+@login_required
+def view_friend_requests(request: HttpRequest) -> JsonResponse:
+    """
+    Returns all pending friend requests for the logged-in user.
+    """
+    pending_requests = FriendRequest.objects.filter(to_user=request.user, is_accepted=False)
+    return JsonResponse({
+        "pending_requests": [fr.as_dict() for fr in pending_requests]
+    })
+@login_required
+@require_POST
+def handle_friend_request(request: HttpRequest) -> JsonResponse:
+    """
+    Accepts or rejects a friend request.
+
+    Request body:
+        - request_id (int): The ID of the friend request.
+        - action (str): 'accept' or 'reject'.
+    """
+    try:
+        data = json.loads(request.body)
+        friend_request = FriendRequest.objects.get(id=data['request_id'], to_user=request.user)
+
+        if data['action'] == 'accept':
+            # Accept the request
+            friend_request.is_accepted = True
+            friend_request.save()
+
+            # Add mutual friendship
+            friend_request.from_user.friends.add(friend_request.to_user)
+            friend_request.to_user.friends.add(friend_request.from_user)
+
+            return JsonResponse({'success': 'Friend request accepted'}, status=200)
+
+        elif data['action'] == 'reject':
+            # Reject the request
+            friend_request.delete()
+            return JsonResponse({'success': 'Friend request rejected'}, status=200)
+
+        else:
+            return JsonResponse({'error': 'Invalid action'}, status=400)
+
+    except FriendRequest.DoesNotExist:
+        return JsonResponse({'error': 'Friend request not found'}, status=404)
+    except KeyError:
+        return JsonResponse({'error': 'Invalid request payload'}, status=400)

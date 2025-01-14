@@ -2,6 +2,7 @@
   <div class="h1">
     {{ title }}
   </div>
+  
 </template>
 
 <script lang="ts">
