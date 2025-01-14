@@ -1,14 +1,35 @@
 import json
 from django.http import HttpResponse, HttpRequest, JsonResponse
+<<<<<<< Updated upstream
 from django.shortcuts import render
 from.models import Hobby, CustomUser, UserHobby
+=======
+<<<<<<< Updated upstream
+from django.shortcuts import render, redirect
+from django.contrib.auth import authenticate, login, logout
+from .forms import SignupForm, LoginForm
+from.models import Hobby, CustomUser, UserHobby, FriendRequest
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
+=======
+from django.shortcuts import render
+from.models import Hobby, CustomUser, UserHobby
+from django.views.decorators.csrf import csrf_exempt
+
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
 
 
 def main_spa(request: HttpRequest) -> HttpResponse:
     return render(request, 'api/spa/index.html', {})
 
 #Hobby API
+<<<<<<< Updated upstream
 def hobby_api(request):
+=======
+@csrf_exempt  # Exempt this view from CSRF checks
+def hobbies_api(request):
+>>>>>>> Stashed changes
     """
     Handles POST request for managing hobby.
     """  
@@ -26,6 +47,14 @@ def hobby_api(request):
             ]
     })
     
+<<<<<<< Updated upstream
+=======
+<<<<<<< Updated upstream
+
+=======
+@csrf_exempt 
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
 def hobby_api(request,hobby_id):
     #check if hobby exists GET
     try:
@@ -50,7 +79,16 @@ def hobby_api(request,hobby_id):
     return JsonResponse(hobby.as_dict())
 
 #User API
+<<<<<<< Updated upstream
 def user_api(request):
+=======
+<<<<<<< Updated upstream
+
+=======
+@csrf_exempt 
+>>>>>>> Stashed changes
+def users_api(request):
+>>>>>>> Stashed changes
     if request.method == "POST":
         POST = json.loads(request.body)
         user = CustomUser.objects.create(
@@ -69,6 +107,14 @@ def user_api(request):
             ]
     })
     
+<<<<<<< Updated upstream
+=======
+<<<<<<< Updated upstream
+
+=======
+@csrf_exempt 
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
 def user_api(request,user_id):
     #check if user exists GET
     try:
@@ -99,6 +145,14 @@ def user_api(request,user_id):
     
     return JsonResponse(user.as_dict())
 
+<<<<<<< Updated upstream
+=======
+<<<<<<< Updated upstream
+
+=======
+@csrf_exempt 
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
 #User-Hobby API through model
 
 def user_hobby_api(request):
@@ -125,7 +179,16 @@ def user_hobby_api(request):
             for user_hobby in UserHobby.objects.all()
             ]
     })
+<<<<<<< Updated upstream
     
+=======
+ 
+<<<<<<< Updated upstream
+
+=======
+@csrf_exempt    
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
 def user_hobby_api(request, user_hobby_id):
     #check if user_hobby exists GET
     try:
