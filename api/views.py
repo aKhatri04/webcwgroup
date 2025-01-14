@@ -1,10 +1,10 @@
 import json
 from django.http import HttpResponse, HttpRequest, JsonResponse
 from django.shortcuts import render
-from.models import Hobby, CustomUser, UserHobby
+from .models import Hobby, CustomUser, UserHobby
 from django.core.paginator import Paginator
 from datetime import date
-from django.db.models import F
+from django.db.models import F, Count, Q
 from collections import defaultdict
 
 
@@ -23,18 +23,13 @@ def hobbies_api(request):
     if request.method == "POST":
         try:
             POST = json.loads(request.body)
-            hobby = Hobby.objects.create(
-                name=POST['name']
-            )
+            hobby = Hobby.objects.create(name=POST["name"])
             return JsonResponse(hobby.as_dict())
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=400)
 
     return JsonResponse({
-        "hobbies": [
-            hobby.as_dict()
-            for hobby in Hobby.objects.all()
-        ]
+        "hobbies": [hobby.as_dict() for hobby in Hobby.objects.all()]
     })
 
 
@@ -76,30 +71,26 @@ def users_api(request):
 
         # Get all users and filter by age
         today = date.today()
-        all_users = CustomUser.objects.annotate(
-            age=today.year - F("date_of_birth__year")
+        users = CustomUser.objects.annotate(
+            age=today.year - F("date_of_birth__year"),
+            common_hobbies=Count("hobbies", filter=Q(hobbies__in=CustomUser.objects.get(id=request.GET.get("current_user_id")).hobbies.all())),
         ).filter(
             age__gte=age_min,
-            age__lte=age_max
-        )
+            age__lte=age_max,
+        ).order_by("-common_hobbies")
 
-        # Group users by hobbies
-        grouped_by_hobby = defaultdict(list)
-        for hobby in Hobby.objects.all():
-            users_with_hobby = all_users.filter(hobbies__id=hobby.id)
-            grouped_by_hobby[hobby.name] = [
-                user.as_dict() for user in users_with_hobby
-            ]
-
-        # Paginate the "All Users" list
-        paginator = Paginator(all_users, 10)
+        # Apply pagination
+        paginator = Paginator(users, 10)
         page_obj = paginator.get_page(page_number)
 
         return JsonResponse({
-            "all_users": [
-                user.as_dict() for user in page_obj.object_list
+            "users": [
+                {
+                    **user.as_dict(),
+                    "common_hobbies": user.common_hobbies  # Include shared hobbies count
+                }
+                for user in page_obj.object_list
             ],
-            "grouped_by_hobby": grouped_by_hobby,
             "total_pages": paginator.num_pages,
             "current_page": page_obj.number,
             "total_users": paginator.count,
@@ -125,15 +116,15 @@ def user_api(request, user_id):
             user.email = data.get("email", user.email)
             user.date_of_birth = data.get("date_of_birth", user.date_of_birth)
 
-            if 'password' in data and data['password']:
-                user.set_password(data['password'])
+            if "password" in data and data["password"]:
+                user.set_password(data["password"])
 
             user.save()
 
-            if 'hobbies' in data:
+            if "hobbies" in data:
                 user.userhobby_set.all().delete()
-                for hobby_data in data['hobbies']:
-                    hobby, _ = Hobby.objects.get_or_create(name=hobby_data['name'])
+                for hobby_data in data["hobbies"]:
+                    hobby, _ = Hobby.objects.get_or_create(name=hobby_data["name"])
                     UserHobby.objects.create(user=user, hobby=hobby)
 
             return JsonResponse(user.as_dict())
@@ -155,13 +146,10 @@ def user_hobbies_api(request):
     if request.method == "POST":
         try:
             POST = json.loads(request.body)
-            hobby = Hobby.objects.get(id=POST['hobby_id'])
-            user = CustomUser.objects.get(id=POST['user_id'])
+            hobby = Hobby.objects.get(id=POST["hobby_id"])
+            user = CustomUser.objects.get(id=POST["user_id"])
 
-            user_hobby = UserHobby.objects.create(
-                hobby=hobby,
-                user=user,
-            )
+            user_hobby = UserHobby.objects.create(hobby=hobby, user=user)
             return JsonResponse(user_hobby.as_dict())
         except Hobby.DoesNotExist:
             return JsonResponse({"message": "Hobby not found"}, status=404)
@@ -172,8 +160,7 @@ def user_hobbies_api(request):
 
     return JsonResponse({
         "user_hobbies": [
-            user_hobby.as_dict()
-            for user_hobby in UserHobby.objects.all()
+            user_hobby.as_dict() for user_hobby in UserHobby.objects.all()
         ]
     })
 
