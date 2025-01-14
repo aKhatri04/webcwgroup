@@ -15,6 +15,10 @@ User = get_user_model()
 def index(request):
     return render(request, 'api/spa/index.html')
 
+
+def main_spa(request: HttpRequest) -> HttpResponse:
+    return render(request, 'api/spa/index.html', {})
+
 # signup page
 def user_signup(request):
     if request.method == 'POST':
@@ -45,9 +49,6 @@ def user_login(request):
 def user_logout(request):
     logout(request)
     return redirect('login')
-
-def main_spa(request: HttpRequest) -> HttpResponse:
-    return render(request, 'api/spa/index.html', {})
 
 #Hobby API
 def hobbies_api(request):

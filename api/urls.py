@@ -23,7 +23,7 @@ from .views import main_spa
 from . import views
 
 urlpatterns = [
-    path('', main_spa),
+    path('spa/index.html', main_spa),
 
     # API entry points should be defined here
 
@@ -37,7 +37,7 @@ urlpatterns = [
     path('user/<int:user_id>', user_api, name='user_api'),
     path('user_hobbies/', user_hobbies_api, name='user hobbies_api'),
     path('user_hobby/<int:user_hobby_id>', user_hobbies_api, name='user_hobby_api'),
-    path('api/user/current/', views.current_user_api, name='current_user_api'),
-    path('api/hobbies/', views.hobbies_api, name='hobbies_api'),
+    path('user/current/', views.current_user_api, name='current_user_api'),
+    path('hobbies/', views.hobbies_api, name='hobbies_api'),
 
 ]

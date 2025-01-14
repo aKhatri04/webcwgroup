@@ -96,18 +96,28 @@
       const selectedHobby = ref<{ id: number; name: string } | null>(null);
       const newHobbyName = ref("");
       const updatedUser = ref({ ...userStore.user });
+      const hobbies = ref<{ id: number; name: string }[]>([]);
       const loading = ref(true);
   
       // Fetch current user and hobbies when mounted
       onMounted(async () => {
-        try {
-          await userStore.fetchCurrentUser();
-          await userStore.fetchHobbies();
-          updatedUser.value = { ...userStore.user };
-        } catch (error) {
-          console.error("Error loading user data:", error);
-        } finally {
-          loading.value = false;
+        try { 
+            console.log(1); 
+            await userStore.fetchCurrentUser(); 
+            console.log(2); 
+            await userStore.fetchHobbies(); 
+            console.log(3); 
+            console.log("User and hobbies fetched successfully!");
+
+            updatedUser.value = { ...userStore.user }; 
+            hobbies.value = userStore.hobbies;
+            console.log("Hobbies loaded into component:", hobbies.value);
+            
+        } 
+        catch (error) { 
+            console.error("Error loading user data:", error); 
+        } finally { 
+            loading.value = false; 
         }
       });
   
@@ -132,16 +142,15 @@
       };
   
       const addExistingHobby = () => {
-        if (selectedHobby.value && !updatedUser.value.hobbies.some((h: { id: number; name: string }) => h.id === selectedHobby.value!.id)) {
-            updatedUser.value.hobbies.push({ ...selectedHobby.value }); // Clone to avoid reference issues
-            selectedHobby.value = null; // Reset after adding
+        if (selectedHobby.value && !updatedUser.value.hobbies.some((hobby) => hobby.id === selectedHobby.value!.id)) {
+          updatedUser.value.hobbies.push({ ...selectedHobby.value });
+          selectedHobby.value = null;
         }
-        };
-
-        const removeHobby = (hobby: { id: number; name: string }) => {
-        updatedUser.value.hobbies = updatedUser.value.hobbies.filter((h: { id: number; name: string }) => h.id !== hobby.id);
-        };
-
+      };
+  
+      const removeHobby = (hobby: { id: number; name: string }) => {
+        updatedUser.value.hobbies = updatedUser.value.hobbies.filter((h) => h.id !== hobby.id);
+      };
   
       const saveChanges = async () => {
         try {
@@ -161,7 +170,7 @@
         updatedUser,
         loading,
         user: userStore.user,
-        hobbies: userStore.hobbies,
+        hobbies,
         greet,
         editProfile,
         cancelEdit,
