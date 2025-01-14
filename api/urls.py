@@ -19,7 +19,7 @@ from django.urls import include, path
 from django.http import HttpResponse
 
 from .views import hobby_api, hobbies_api, users_api, user_api, user_hobbies_api, main_spa
-from .views import main_spa
+from .views import main_spa, csrf_token_view
 from . import views
 
 urlpatterns = [
@@ -30,7 +30,7 @@ urlpatterns = [
     path('login/', views.user_login, name='login'),
     path('signup/', views.user_signup, name='signup'),
     path('logout/', views.user_logout, name='logout'),
-    
+    path('csrf-token/', csrf_token_view, name='csrf_token_api'),
     path('hobbies/', hobbies_api, name='hobbies_api'),
     path('hobby/<int:hobby_id>', hobby_api, name='hobby_api'),
     path('users/', users_api, name='users_api'),
@@ -38,6 +38,5 @@ urlpatterns = [
     path('user_hobbies/', user_hobbies_api, name='user hobbies_api'),
     path('user_hobby/<int:user_hobby_id>', user_hobbies_api, name='user_hobby_api'),
     path('user/current/', views.current_user_api, name='current_user_api'),
-    path('hobbies/', views.hobbies_api, name='hobbies_api'),
 
 ]

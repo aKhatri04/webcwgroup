@@ -96,6 +96,7 @@
   import { useUserStore } from "../stores/userStore";
   
   export default defineComponent({
+
     setup() {
       const userStore = useUserStore();
       const editing = ref(true);
@@ -105,6 +106,10 @@
       const hobbies = ref<{ id: number; name: string }[]>([]);
       const loading = ref(true);
   
+      onMounted(() => {
+        userStore.fetchCsrfToken();
+        userStore.fetchCurrentUser();
+      })
       // Fetch current user and hobbies when mounted
       onMounted(async () => {
         try { 
@@ -130,7 +135,8 @@
       const greet = () => {
         return `Welcome to your profile, ${userStore.user?.name || "User"}!`;
       };
-  
+
+
       const editProfile = () => {
         editing.value = true;
         updatedUser.value = { ...userStore.user };
@@ -158,16 +164,22 @@
         updatedUser.value.hobbies = updatedUser.value.hobbies.filter((h) => h.id !== hobby.id);
       };
   
-      const saveChanges = async () => {
+    const saveChanges = async () => {
         try {
-          await userStore.updateUserProfile(updatedUser.value);
-          alert("Profile updated successfully!");
-          editing.value = false;
+            updatedUser.value.hobbies = updatedUser.value.hobbies.map((hobby) => ({
+                id: hobby.id,
+                name: hobby.name,
+            }));
+
+            await userStore.updateUserProfile(updatedUser.value);
+            alert("Profile updated successfully!");
+            editing.value = false;
         } catch (error) {
-          console.error("Failed to update profile:", error);
-          alert("An error occurred while saving changes.");
+            console.error("Failed to update profile:", error);
+            alert("An error occurred while saving changes.");
         }
-      };
+        };
+
   
       return {
         editing,

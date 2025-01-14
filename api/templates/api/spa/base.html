@@ -1,9 +1,36 @@
-{% if request.user.is_authenticated %}
+{% comment %} {% if request.user.is_authenticated %}
   <p>{{ request.user.username }}</p>
   <a href="{% url 'logout' %}">Logout</a>
 {% else %}
   <a href="{% url 'login' %}">Login</a>
   <a href="{% url 'signup' %}">Signup</a>
-{% endif %}
+{% endif %} {% endcomment %}
 
 <h1>Welcome!</h1>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csrf-token" content="{{ csrf_token }}"> <!-- CSRF meta tag added -->
+  <title>Hobbies Web App</title>
+</head>
+<body>
+  {% if request.user.is_authenticated %}
+    <p>{{ request.user.username }}</p>
+    <a href="{% url 'logout' %}">Logout</a>
+  {% else %}
+    <a href="{% url 'login' %}">Login</a>
+    <a href="{% url 'signup' %}">Signup</a>
+  {% endif %}
+
+  <h1>Welcome!</h1>
+
+  <!-- Vue app entry point -->
+  <div id="app"></div>
+
+  <!-- Include your frontend scripts -->
+  <script type="module" src="{% static 'api/spa/assets/index.js' %}"></script>
+</body>
+</html>

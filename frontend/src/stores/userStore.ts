@@ -14,10 +14,13 @@ interface User {
   password?: string;
 }
 
+
 export const useUserStore = defineStore("userStore", {
+
   state: () => ({
     user: {} as User,  // Store the current user
     hobbies: [] as Hobby[],  // Store all available hobbies for dropdown
+    csrfToken: "",  // Add csrfToken to the state
   }),
   actions: {
     async fetchCurrentUser() {
@@ -43,11 +46,31 @@ export const useUserStore = defineStore("userStore", {
         console.error("Error fetching hobbies:", error);
       }
     },
+
+    async fetchCsrfToken() {
+      try {
+        const tokenElement = document.querySelector('meta[name="csrf-token"]');
+        if (tokenElement) {
+          this.csrfToken = tokenElement.getAttribute("content") || "";
+          console.log("CSRF token fetched:", this.csrfToken);
+        } else {
+          console.error("CSRF token meta tag not found.");
+        }
+      } catch (error) {
+        console.error("Error fetching CSRF token:", error);
+      }
+    },
+
     async updateUserProfile(updatedUser: Partial<User>) {
       try {
+        console.log("CSRF Token:", this.csrfToken);
+        console.log("Sending data:", updatedUser);
         const response = await fetch(`/user/${this.user.id}`, {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "X-CSRFToken": this.csrfToken, // Send CSRF token for security 
+           },
           body: JSON.stringify(updatedUser),
         });
         if (!response.ok) throw new Error("Failed to update profile");

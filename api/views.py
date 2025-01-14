@@ -4,10 +4,9 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from .forms import SignupForm, LoginForm
 from.models import Hobby, CustomUser, UserHobby
-
-
-
 from django.contrib.auth import get_user_model
+from django.contrib.auth.decorators import login_required
+from django.middleware.csrf import get_token
 
 User = get_user_model()
 
@@ -15,6 +14,10 @@ User = get_user_model()
 def index(request):
     return render(request, 'api/spa/index.html')
 
+
+
+def csrf_token_view(request):
+    return JsonResponse({"csrfToken": get_token(request)})
 
 def main_spa(request: HttpRequest) -> HttpResponse:
     return render(request, 'api/spa/index.html', {})
@@ -51,6 +54,7 @@ def user_logout(request):
     return redirect('login')
 
 #Hobby API
+
 def hobbies_api(request):
     """
     Handles POST request for managing hobby.
@@ -81,7 +85,7 @@ def hobby_api(request,hobby_id):
     if request.method == "PUT":
         try:
             data = json.loads(request.body)
-            hobby.name = data["name", hobby.name]
+            hobby.name = data.get["name", hobby.name]
             hobby.save()
             return JsonResponse(hobby.as_dict())
         except Exception as e:
@@ -195,8 +199,8 @@ def user_hobby_api(request, user_hobby_id):
     if request.method == "PUT":
         try:
             data = json.loads(request.body)
-            user_hobby.hobby = data["hobby", user_hobby.hobby]
-            user_hobby.user = data["user", user_hobby.user]
+            user_hobby.hobby = Hobby.objects.get(id=data.get("hobby", user_hobby.hobby_id))["hobby_id"]
+            user_hobby.user = data.get["user", user_hobby.user]
             user_hobby.save()
             return JsonResponse(user_hobby.as_dict())
         except Exception as e:
@@ -208,7 +212,6 @@ def user_hobby_api(request, user_hobby_id):
     
     return JsonResponse(user_hobby.as_dict())
 
-from django.contrib.auth.decorators import login_required
 
 
 @login_required
