@@ -18,8 +18,11 @@ from django.contrib import admin
 from django.urls import include, path
 from django.http import HttpResponse
 
-from .views import hobby_api, hobbies_api, users_api, user_api, user_hobbies_api, main_spa
+
+from .views import hobby_api, hobbies_api, users_api, user_api, user_hobbies_api, main_spa, send_friend_request, view_friend_requests, handle_friend_request
+
 from .views import main_spa, csrf_token_view
+
 from . import views
 
 urlpatterns = [
@@ -37,6 +40,12 @@ urlpatterns = [
     path('user/<int:user_id>', user_api, name='user_api'),
     path('user_hobbies/', user_hobbies_api, name='user hobbies_api'),
     path('user_hobby/<int:user_hobby_id>', user_hobbies_api, name='user_hobby_api'),
-    path('user/current/', views.current_user_api, name='current_user_api'),
 
+    # Friend Request API
+    path('friend-request/send/', send_friend_request, name='send_friend_request'),
+    path('friend-requests/', view_friend_requests, name='view_friend_requests'),
+    path('friend-request/handle/', handle_friend_request, name='handle_friend_request'),
+    path('user/current/', views.current_user_api, name='current_user_api'),
 ]
+
+
