@@ -3,6 +3,7 @@ from django.http import HttpResponse, HttpRequest, JsonResponse
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from .forms import SignupForm, LoginForm
+
 from.models import Hobby, CustomUser, UserHobby, FriendRequest
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
@@ -10,12 +11,22 @@ from django.views.decorators.http import require_POST
 
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.decorators import login_required
+from django.middleware.csrf import get_token
 
 User = get_user_model()
 
 # Home page
 def index(request):
     return render(request, 'api/spa/index.html')
+
+
+
+def csrf_token_view(request):
+    return JsonResponse({"csrfToken": get_token(request)})
+
+def main_spa(request: HttpRequest) -> HttpResponse:
+    return render(request, 'api/spa/index.html', {})
 
 # signup page
 def user_signup(request):
@@ -48,10 +59,8 @@ def user_logout(request):
     logout(request)
     return redirect('login')
 
-def main_spa(request: HttpRequest) -> HttpResponse:
-    return render(request, 'api/spa/index.html', {})
-
 #Hobby API
+
 def hobbies_api(request):
     """
     Handles POST request for managing hobby.
@@ -82,7 +91,7 @@ def hobby_api(request,hobby_id):
     if request.method == "PUT":
         try:
             data = json.loads(request.body)
-            hobby.name = data["name", hobby.name]
+            hobby.name = data.get["name", hobby.name]
             hobby.save()
             return JsonResponse(hobby.as_dict())
         except Exception as e:
@@ -196,8 +205,8 @@ def user_hobby_api(request, user_hobby_id):
     if request.method == "PUT":
         try:
             data = json.loads(request.body)
-            user_hobby.hobby = data["hobby", user_hobby.hobby]
-            user_hobby.user = data["user", user_hobby.user]
+            user_hobby.hobby = Hobby.objects.get(id=data.get("hobby", user_hobby.hobby_id))["hobby_id"]
+            user_hobby.user = data.get["user", user_hobby.user]
             user_hobby.save()
             return JsonResponse(user_hobby.as_dict())
         except Exception as e:
@@ -208,6 +217,7 @@ def user_hobby_api(request, user_hobby_id):
         return JsonResponse({"message": "User-Hobby deleted"})
     
     return JsonResponse(user_hobby.as_dict())
+
 
 @login_required
 @require_POST
@@ -281,3 +291,67 @@ def handle_friend_request(request: HttpRequest) -> JsonResponse:
         return JsonResponse({'error': 'Friend request not found'}, status=404)
     except KeyError:
         return JsonResponse({'error': 'Invalid request payload'}, status=400)
+
+def current_user_api(request):
+    # Check if the user is authenticated
+    try:
+        user = request.user
+        if not user.is_authenticated:
+            return JsonResponse({"message": "User is not authenticated"}, status=403)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+    # Handles GET request to fetch current user data
+    if request.method == "GET":
+        # Add hobbies to the user data
+        hobbies = [{"id": hobby.id, "name": hobby.name} for hobby in user.hobbies.all()]
+        user_data = {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "date_of_birth": str(user.date_of_birth),
+            "hobbies": hobbies  # Include hobbies in the response
+        }
+        return JsonResponse(user_data)
+
+    # Handles PUT request to update the current user's details
+    if request.method == "PUT":
+        try:
+            data = json.loads(request.body)
+            user.name = data.get("name", user.name)
+            user.email = data.get("email", user.email)
+            user.date_of_birth = data.get("date_of_birth", user.date_of_birth)
+
+            if "password" in data and data["password"]:
+                user.set_password(data["password"])
+
+            user.save()
+
+            # Handle hobbies if provided
+            if "hobbies" in data:
+                user.userhobby_set.all().delete()
+                for hobby_data in data["hobbies"]:
+                    hobby, _ = Hobby.objects.get_or_create(name=hobby_data["name"])
+                    UserHobby.objects.create(user=user, hobby=hobby)
+
+            # Return the updated user data with hobbies
+            hobbies = [{"id": hobby.id, "name": hobby.name} for hobby in user.hobbies.all()]
+            updated_user_data = {
+                "id": user.id,
+                "name": user.name,
+                "email": user.email,
+                "date_of_birth": str(user.date_of_birth),
+                "hobbies": hobbies
+            }
+
+            return JsonResponse(updated_user_data)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=400)
+
+    # Handles DELETE request to delete the current user
+    if request.method == "DELETE":
+        user.delete()
+        return JsonResponse({"message": "User deleted"})
+
+    return JsonResponse({"message": "Unsupported request method"}, status=405)
+

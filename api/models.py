@@ -46,11 +46,11 @@ class CustomUser(AbstractUser):
         return {"id":self.id, 
                 "name":self.name, 
                 "email":self.email, 
-                "date_of_birth":self.date_of_birth, 
-                "hobbies":[[hobby.id, hobby.name] for hobby in self.hobbies.all()],
+                "date_of_birth": str(self.date_of_birth), 
+                "hobbies":[{"id": hobby.id, "name": hobby.name} for hobby in self.hobbies.all()],
                 "api": reverse('user_api', args=[self.id]),
                 }
-    
+
     def current_as_dict(self):
         return {"id":self.id, 
                 "name":self.user, 
