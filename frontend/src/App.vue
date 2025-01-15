@@ -22,9 +22,15 @@
             </router-link>
             <router-link
                 class=""
-                :to="{name: 'Friend Page'}"
+                :to="{name: 'Send Request Page'}"
             >
-                Friend Page
+                Send Request Page
+            </router-link>
+            <router-link
+                class=""
+                :to="{name: 'Pending Requests Page'}"
+            >
+                Pending Requests Page
             </router-link>
         </div>
         <RouterView class="flex-shrink-0" />
