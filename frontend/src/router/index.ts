@@ -6,7 +6,11 @@ import { createRouter, createWebHistory } from 'vue-router'
 // These can be imported from other files
 import MainPage from '../pages/MainPage.vue';
 import OtherPage from '../pages/OtherPage.vue';
-import ProfilePage from '../pages/profilePage.vue';
+
+import ProfilePage from '../pages/ProfilePage.vue';
+import SendFriendRequest from '../pages/SendFriendRequest.vue';
+import FriendRequests from '../pages/FriendRequests.vue';
+
 
 let base = (import.meta.env.MODE == 'development') ? import.meta.env.BASE_URL : ''
 
@@ -19,6 +23,8 @@ const router = createRouter({
         { path: '/', name: 'Main Page', component: MainPage },
         { path: '/other/', name: 'Other Page', component: OtherPage },
         { path: '/profile/', name: 'Profile Page', component: ProfilePage },
+        { path: '/request/', name: 'Send Request Page', component: SendFriendRequest },
+        { path: '/pending/', name: 'Pending Requests Page', component: FriendRequests },
 
     ]
 })

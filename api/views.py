@@ -3,7 +3,13 @@ from django.http import HttpResponse, HttpRequest, JsonResponse
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from .forms import SignupForm, LoginForm
-from.models import Hobby, CustomUser, UserHobby
+
+from.models import Hobby, CustomUser, UserHobby, FriendRequest
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
+
+
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.middleware.csrf import get_token
@@ -213,8 +219,79 @@ def user_hobby_api(request, user_hobby_id):
     return JsonResponse(user_hobby.as_dict())
 
 
-
 @login_required
+@require_POST
+def send_friend_request(request: HttpRequest) -> JsonResponse:
+    """
+    Sends a friend request from the logged-in user to another user.
+
+    Request body:
+        - to_user_id (int): The ID of the user to whom the request is being sent.
+    """
+    try:
+        data = json.loads(request.body)
+        to_user = CustomUser.objects.get(id=data['to_user_id'])
+        from_user = request.user
+
+        # Check if the request already exists
+        if FriendRequest.objects.filter(from_user=from_user, to_user=to_user).exists():
+            return JsonResponse({'error': 'Friend request already sent'}, status=400)
+
+        # Create the friend request
+        friend_request = FriendRequest.objects.create(from_user=from_user, to_user=to_user)
+        return JsonResponse(friend_request.as_dict(), status=201)
+
+    except CustomUser.DoesNotExist:
+        return JsonResponse({'error': 'User not found'}, status=404)
+    except KeyError:
+        return JsonResponse({'error': 'Invalid request payload'}, status=400)
+@login_required
+def view_friend_requests(request: HttpRequest) -> JsonResponse:
+    """
+    Returns all pending friend requests for the logged-in user.
+    """
+    pending_requests = FriendRequest.objects.filter(to_user=request.user, is_accepted=False)
+    return JsonResponse({
+        "pending_requests": [fr.as_dict() for fr in pending_requests]
+    })
+@login_required
+@require_POST
+def handle_friend_request(request: HttpRequest) -> JsonResponse:
+    """
+    Accepts or rejects a friend request.
+
+    Request body:
+        - request_id (int): The ID of the friend request.
+        - action (str): 'accept' or 'reject'.
+    """
+    try:
+        data = json.loads(request.body)
+        friend_request = FriendRequest.objects.get(id=data['request_id'], to_user=request.user)
+
+        if data['action'] == 'accept':
+            # Accept the request
+            friend_request.is_accepted = True
+            friend_request.save()
+
+            # Add mutual friendship
+            friend_request.from_user.friends.add(friend_request.to_user)
+            friend_request.to_user.friends.add(friend_request.from_user)
+
+            return JsonResponse({'success': 'Friend request accepted'}, status=200)
+
+        elif data['action'] == 'reject':
+            # Reject the request
+            friend_request.delete()
+            return JsonResponse({'success': 'Friend request rejected'}, status=200)
+
+        else:
+            return JsonResponse({'error': 'Invalid action'}, status=400)
+
+    except FriendRequest.DoesNotExist:
+        return JsonResponse({'error': 'Friend request not found'}, status=404)
+    except KeyError:
+        return JsonResponse({'error': 'Invalid request payload'}, status=400)
+
 def current_user_api(request):
     # Check if the user is authenticated
     try:
@@ -277,3 +354,4 @@ def current_user_api(request):
         return JsonResponse({"message": "User deleted"})
 
     return JsonResponse({"message": "Unsupported request method"}, status=405)
+
