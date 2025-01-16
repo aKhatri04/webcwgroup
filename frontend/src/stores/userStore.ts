@@ -15,13 +15,12 @@ interface User {
 
 export const useUserStore = defineStore("userStore", {
   state: () => ({
-    user: {} as User, // Authenticated user's data
-    hobbies: [] as Hobby[], // Available hobbies
-    csrfToken: "", // CSRF token for secure requests
-    isAuthenticated: false, // Track user's authentication status
-    isLoading: false, // Loading state for API calls
-  }),
+    user: {} as User,  // Store the current user
+    hobbies: [] as Hobby[],  // Store all available hobbies for dropdown
+    csrfToken: "",  // Add csrfToken to the state
+    friendRequests: [] as FriendRequest[], // Use the FriendRequest interface here
 
+  }),
   actions: {
     /**
      * Fetch the CSRF token from the meta tag.
@@ -45,20 +44,10 @@ export const useUserStore = defineStore("userStore", {
       try {
         const response = await fetch("http://localhost:8000/user/current/", {
           method: "GET",
-          credentials: "include", // Ensure cookies are included
+          credentials: "include",
         });
-
-        const contentType = response.headers.get("content-type");
-        if (!response.ok || !contentType?.includes("application/json")) {
-          const errorText = await response.text();
-          console.error("Failed to fetch current user:", errorText);
-          throw new Error("Non-JSON response received. Check if user is authenticated.");
-        }
-
-        const data = await response.json();
-        this.user = data;
-        this.isAuthenticated = true;
-        console.log("User fetched successfully:", this.user);
+        if (!response.ok) throw new Error("Failed to fetch current user");
+        this.user = await response.json();
       } catch (error) {
         this.isAuthenticated = false;
         console.error("Error fetching current user:", error);
@@ -71,23 +60,43 @@ export const useUserStore = defineStore("userStore", {
      * Fetch all available hobbies.
      */
     async fetchHobbies() {
-      this.isLoading = true;
       try {
-        const response = await fetch("http://localhost:8000/hobbies/", {
-          method: "GET",
-          credentials: "include", // Ensure cookies are included
-        });
-
-        const contentType = response.headers.get("content-type");
-        if (!response.ok || !contentType?.includes("application/json")) {
-          const errorText = await response.text();
-          console.error("Failed to fetch hobbies:", errorText);
-          throw new Error("Non-JSON response received.");
-        }
-
+        const response = await fetch("/hobbies/");
+        if (!response.ok) throw new Error("Failed to fetch hobbies");
         const data = await response.json();
-        this.hobbies = data.hobbies || [];
-        console.log("Hobbies fetched successfully:", this.hobbies);
+        this.hobbies = data.hobbies;
+      } catch (error) {
+        console.error("Error fetching hobbies:", error);
+      }
+    },
+    async fetchCsrfToken() {
+      try {
+        const tokenElement = document.querySelector('meta[name="csrf-token"]');
+        if (tokenElement) {
+          this.csrfToken = tokenElement.getAttribute("content") || "";
+          console.log("CSRF token fetched:", this.csrfToken);
+        } else {
+          console.error("CSRF token meta tag not found.");
+        }
+      } catch (error) {
+        console.error("Error fetching CSRF token:", error);
+      }
+    },
+
+    async fetchFriendRequests() {
+      try {
+        const response = await fetch("/friend-requests/", {
+          method: "GET",
+          credentials: "include",
+        });
+  
+        if (response.ok) {
+          const data = await response.json();
+          console.log("Fetched friend requests:", data.pending_requests);
+          this.friendRequests = [...data.pending_requests]; // Trigger reactivity
+        } else {
+          console.error("Failed to fetch friend requests.");
+        }
       } catch (error) {
         console.error("Error fetching hobbies:", error);
       } finally {
@@ -106,13 +115,12 @@ export const useUserStore = defineStore("userStore", {
         console.error(`Unexpected response: ${response.status} - ${response.statusText}`);
       }
     },
+    
+    
 
-    /**
-     * Update the user's profile.
-     */
     async updateUserProfile(updatedUser: Partial<User>) {
       try {
-        const response = await fetch(`http://localhost:8000/user/${this.user.id}/`, {
+        const response = await fetch(`/user/${this.user.id}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -120,18 +128,8 @@ export const useUserStore = defineStore("userStore", {
           },
           body: JSON.stringify(updatedUser),
         });
-
-        const contentType = response.headers.get("content-type");
-        if (!response.ok || !contentType?.includes("application/json")) {
-          this.handleFailedRequest(response);
-          const errorText = await response.text();
-          console.error("Failed to update profile:", errorText);
-          throw new Error("Non-JSON response received.");
-        }
-
-        const data = await response.json();
-        this.user = data;
-        console.log("Profile updated successfully:", this.user);
+        if (!response.ok) throw new Error("Failed to update profile");
+        this.user = await response.json();
       } catch (error) {
         console.error("Error updating user profile:", error);
       }

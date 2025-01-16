@@ -7,6 +7,7 @@ from .forms import SignupForm, LoginForm
 from.models import Hobby, CustomUser, UserHobby, FriendRequest
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_exempt
 
 
 
@@ -61,25 +62,24 @@ def user_logout(request):
 
 #Hobby API
 
-def hobbies_api(request):
+# Hobbies API: Fetch all hobbies or add a new hobby
+@login_required
+@csrf_exempt
+def hobbies_api(request: HttpRequest) -> JsonResponse:
     """
-    Handles POST request for managing hobby.
-    """  
-    if request.method == "POST": 
-        POST = json.loads(request.body)
-        hobby = Hobby.objects.create(
-            name = POST['name']
-        )
-        return JsonResponse(hobby.as_dict())
-    
-    return JsonResponse({
-        "hobbies": [
-            hobby.as_dict() 
-            for hobby in Hobby.objects.all()
-            ]
-    })
-    
+    Handles fetching all hobbies or creating a new hobby.
+    """
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            hobby, created = Hobby.objects.get_or_create(name=data["name"].strip())
+            return JsonResponse(hobby.as_dict(), status=201 if created else 200)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=400)
 
+    hobbies = [hobby.as_dict() for hobby in Hobby.objects.all()]
+    return JsonResponse({"hobbies": hobbies})
+@csrf_exempt
 def hobby_api(request,hobby_id):
     #check if hobby exists GET
     try:
@@ -104,7 +104,7 @@ def hobby_api(request,hobby_id):
     return JsonResponse(hobby.as_dict())
 
 #User API
-
+@csrf_exempt
 def users_api(request):
     if request.method == "POST":
         POST = json.loads(request.body)
@@ -124,48 +124,44 @@ def users_api(request):
             ]
     })
     
-
-def user_api(request,user_id):
-    #check if user exists GET
+@csrf_exempt
+@login_required
+def user_api(request: HttpRequest, user_id: int) -> JsonResponse:
+    """
+    Handles fetching, updating, or deleting a user profile.
+    """
     try:
-        user =  CustomUser.objects.get(id=user_id)
-    except CustomUser.DoesNotExist:
-        return JsonResponse({"message": "User not found"}, status=404)
-    
-    #handles PUT, DELETE requests, update details and delete requests
-    if request.method == "PUT":
-        try:
-            data = json.loads(request.body)
-            user.username = data["username", user.username]
-            user.name = data["name", user.name]
-            user.email = data["email", user.email]
-            user.date_of_birth = data["date_of_birth", user.date_of_birth]
+        user = CustomUser.objects.get(id=user_id)
 
-            
-            if 'password' in data and data['password']:
-                user.set_password(data['password'])
-                
+        if request.method == "PUT":
+            data = json.loads(request.body)
+            user.name = data.get("name", user.name)
+            user.email = data.get("email", user.email)
+            user.date_of_birth = data.get("date_of_birth", user.date_of_birth)
+
+            if "password" in data and data["password"]:
+                user.set_password(data["password"])
+
             user.save()
-            
-            if 'hobbies' in data:
-                # Clear existing hobbies and add new ones
+
+            if "hobbies" in data:
                 user.userhobby_set.all().delete()
-                for hobby_data in data['hobbies']:
-                    hobby, _ = Hobby.objects.get_or_create(name=hobby_data['name'])
+                for hobby_data in data["hobbies"]:
+                    hobby, _ = Hobby.objects.get_or_create(name=hobby_data["name"])
                     UserHobby.objects.create(user=user, hobby=hobby)
 
             return JsonResponse(user.as_dict())
-        except Exception as e:
-            return JsonResponse({"error": str(e)}, status=400)
-        
-        
-    if request.method == "DELETE":
-        user.delete()
-        return JsonResponse({"message": "User deleted"})
-    
-    return JsonResponse(user.as_dict())
 
+        if request.method == "DELETE":
+            user.delete()
+            return JsonResponse({"message": "User deleted"}, status=200)
 
+        return JsonResponse(user.as_dict())
+
+    except CustomUser.DoesNotExist:
+        return JsonResponse({"error": "User not found"}, status=404)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=400)
 #User-Hobby API through model
 
 def user_hobbies_api(request):
@@ -219,9 +215,10 @@ def user_hobby_api(request, user_hobby_id):
     return JsonResponse(user_hobby.as_dict())
 
 
+@csrf_exempt
 @login_required
 @require_POST
-def send_friend_request(request: HttpRequest) -> JsonResponse:
+def send_friend_request(request):
     """
     Sends a friend request from the logged-in user to another user by username.
     """
@@ -238,8 +235,16 @@ def send_friend_request(request: HttpRequest) -> JsonResponse:
 
         from_user = request.user
 
-        # Check if a request already exists
-        if FriendRequest.objects.filter(from_user=from_user, to_user=to_user).exists():
+        # Check if the users are already friends
+        if FriendRequest.objects.filter(
+            from_user=from_user, to_user=to_user, is_accepted=True
+        ).exists() or FriendRequest.objects.filter(
+            from_user=to_user, to_user=from_user, is_accepted=True
+        ).exists():
+            return JsonResponse({'message': 'You are already friends with this user'}, status=400)
+
+        # Check if a pending request already exists
+        if FriendRequest.objects.filter(from_user=from_user, to_user=to_user, is_accepted=False).exists():
             return JsonResponse({'error': 'Friend request already sent'}, status=400)
 
         # Create the friend request
@@ -249,45 +254,54 @@ def send_friend_request(request: HttpRequest) -> JsonResponse:
     except json.JSONDecodeError:
         return JsonResponse({'error': 'Invalid request payload'}, status=400)
 @login_required
-def view_friend_requests(request: HttpRequest) -> JsonResponse:
+def view_friend_requests(request):
     """
     Returns all pending friend requests for the logged-in user.
     """
-    print("Logged-in user:", request.user)  # Debugging
+    # Fetch all pending friend requests where the logged-in user is the recipient
     pending_requests = FriendRequest.objects.filter(to_user=request.user, is_accepted=False)
-    print("Pending Requests:", [fr.as_dict() for fr in pending_requests])  # Debugging
 
-    return JsonResponse({
+    # Serialize the data
+    data = {
         "pending_requests": [fr.as_dict() for fr in pending_requests]
-    })
+    }
+
+    # Log for debugging
+    print("Logged-in user:", request.user.username)
+    print("Pending FriendRequests Queryset:", pending_requests)
+    print("Serialized Data:", data)
+
+    return JsonResponse(data, status=200)
+
+@csrf_exempt
 @login_required
 @require_POST
 def handle_friend_request(request: HttpRequest) -> JsonResponse:
     """
-    Handles a friend request (accept or reject).
+    Handles accepting or rejecting a friend request and returns updated pending requests.
     """
     try:
         data = json.loads(request.body)
         friend_request = FriendRequest.objects.get(id=data['request_id'], to_user=request.user)
 
         if data['action'] == 'accept':
-            # Accept the request
             friend_request.is_accepted = True
             friend_request.save()
-            return JsonResponse({'success': 'Friend request accepted'}, status=200)
-
         elif data['action'] == 'reject':
-            # Reject the request
             friend_request.delete()
-            return JsonResponse({'success': 'Friend request rejected'}, status=200)
-
         else:
             return JsonResponse({'error': 'Invalid action'}, status=400)
 
+        # Return the updated pending requests
+        pending_requests = FriendRequest.objects.filter(to_user=request.user, is_accepted=False)
+        return JsonResponse({
+            "pending_requests": [req.as_dict() for req in pending_requests]
+        }, status=200)
+
     except FriendRequest.DoesNotExist:
         return JsonResponse({'error': 'Friend request not found'}, status=404)
-    except KeyError:
-        return JsonResponse({'error': 'Invalid request payload'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
 
 def current_user_api(request):
     # Check if the user is authenticated
