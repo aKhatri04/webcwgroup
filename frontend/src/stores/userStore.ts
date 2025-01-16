@@ -14,6 +14,13 @@ interface User {
   password?: string;
 }
 
+interface FriendRequest {
+  id: number;
+  from_user: { id: number; name: string };
+  to_user: { id: number; name: string };
+  is_accepted: boolean;
+  created_at: string;
+}
 
 export const useUserStore = defineStore("userStore", {
 
@@ -21,6 +28,7 @@ export const useUserStore = defineStore("userStore", {
     user: {} as User,  // Store the current user
     hobbies: [] as Hobby[],  // Store all available hobbies for dropdown
     csrfToken: "",  // Add csrfToken to the state
+    friendRequests: [] as FriendRequest[], // Store pending friend requests
   }),
   actions: {
     async fetchCurrentUser() {
@@ -58,6 +66,27 @@ export const useUserStore = defineStore("userStore", {
         }
       } catch (error) {
         console.error("Error fetching CSRF token:", error);
+      }
+    },
+
+    async fetchFriendRequests() {
+      try {
+        const response = await fetch("/friend-requests/", {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        });
+    
+        if (!response.ok) {
+          console.error("Failed to fetch friend requests:", response.status, response.statusText);
+          throw new Error("Failed to fetch friend requests");
+        }
+    
+        const data = await response.json();
+        console.log("Fetched friend requests:", data.pending_requests); // Debugging
+        this.friendRequests = data.pending_requests; // Update the store
+        console.log("Updated friendRequests state:", this.friendRequests); // Debugging
+      } catch (error) {
+        console.error("Error fetching friend requests:", error);
       }
     },
 

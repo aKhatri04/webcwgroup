@@ -223,17 +223,22 @@ def user_hobby_api(request, user_hobby_id):
 @require_POST
 def send_friend_request(request: HttpRequest) -> JsonResponse:
     """
-    Sends a friend request from the logged-in user to another user.
-
-    Request body:
-        - to_user_id (int): The ID of the user to whom the request is being sent.
+    Sends a friend request from the logged-in user to another user by username.
     """
     try:
         data = json.loads(request.body)
-        to_user = CustomUser.objects.get(id=data['to_user_id'])
+        to_username = data.get('to_username')
+        if not to_username:
+            return JsonResponse({'error': 'Username is required'}, status=400)
+
+        try:
+            to_user = CustomUser.objects.get(username=to_username)
+        except CustomUser.DoesNotExist:
+            return JsonResponse({'error': 'User not found'}, status=404)
+
         from_user = request.user
 
-        # Check if the request already exists
+        # Check if a request already exists
         if FriendRequest.objects.filter(from_user=from_user, to_user=to_user).exists():
             return JsonResponse({'error': 'Friend request already sent'}, status=400)
 
@@ -241,16 +246,17 @@ def send_friend_request(request: HttpRequest) -> JsonResponse:
         friend_request = FriendRequest.objects.create(from_user=from_user, to_user=to_user)
         return JsonResponse(friend_request.as_dict(), status=201)
 
-    except CustomUser.DoesNotExist:
-        return JsonResponse({'error': 'User not found'}, status=404)
-    except KeyError:
+    except json.JSONDecodeError:
         return JsonResponse({'error': 'Invalid request payload'}, status=400)
 @login_required
 def view_friend_requests(request: HttpRequest) -> JsonResponse:
     """
     Returns all pending friend requests for the logged-in user.
     """
+    print("Logged-in user:", request.user)  # Debugging
     pending_requests = FriendRequest.objects.filter(to_user=request.user, is_accepted=False)
+    print("Pending Requests:", [fr.as_dict() for fr in pending_requests])  # Debugging
+
     return JsonResponse({
         "pending_requests": [fr.as_dict() for fr in pending_requests]
     })
@@ -258,11 +264,7 @@ def view_friend_requests(request: HttpRequest) -> JsonResponse:
 @require_POST
 def handle_friend_request(request: HttpRequest) -> JsonResponse:
     """
-    Accepts or rejects a friend request.
-
-    Request body:
-        - request_id (int): The ID of the friend request.
-        - action (str): 'accept' or 'reject'.
+    Handles a friend request (accept or reject).
     """
     try:
         data = json.loads(request.body)
@@ -272,11 +274,6 @@ def handle_friend_request(request: HttpRequest) -> JsonResponse:
             # Accept the request
             friend_request.is_accepted = True
             friend_request.save()
-
-            # Add mutual friendship
-            friend_request.from_user.friends.add(friend_request.to_user)
-            friend_request.to_user.friends.add(friend_request.from_user)
-
             return JsonResponse({'success': 'Friend request accepted'}, status=200)
 
         elif data['action'] == 'reject':

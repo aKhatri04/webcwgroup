@@ -1,47 +1,62 @@
 <template>
     <div>
       <h2>Send a Friend Request</h2>
-      <input v-model="toUserId" type="number" placeholder="Enter user ID" />
+      <input v-model="toUsername" type="text" placeholder="Enter username" />
       <button @click="sendRequest">Send Request</button>
     </div>
   </template>
   
   <script lang="ts">
-  import { defineComponent, ref } from 'vue';
+  import { defineComponent, ref } from "vue";
   
   export default defineComponent({
     setup() {
-      const toUserId = ref<number | null>(null);
+      const toUsername = ref<string>("");
   
       const sendRequest = async () => {
-        if (!toUserId.value) {
-          alert('Please enter a valid user ID.');
+        if (!toUsername.value.trim()) {
+          alert("Please enter a valid username.");
           return;
         }
+  
         try {
-          const response = await fetch('/friend-request/send/', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ to_user_id: toUserId.value }),
+          const response = await fetch("/friend-request/send/", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRFToken": getCookie("csrftoken"), // Fetch CSRF token
+            },
+            body: JSON.stringify({ to_username: toUsername.value.trim() }),
           });
+  
           if (response.ok) {
-            alert('Friend request sent!');
-            toUserId.value = null;
+            alert("Friend request sent!");
+            toUsername.value = ""; // Clear the input
           } else {
             const errorData = await response.json();
-            alert(errorData.error || 'Failed to send friend request.');
+            alert(errorData.error || "Failed to send friend request.");
           }
         } catch (error) {
-          alert('An unexpected error occurred.');
+          console.error("Error sending friend request:", error);
+          alert("An unexpected error occurred.");
         }
       };
   
-      return { toUserId, sendRequest };
+      const getCookie = (name: string) => {
+        const cookies = document.cookie.split(";");
+        for (const cookie of cookies) {
+          const [key, value] = cookie.trim().split("=");
+          if (key === name) return value;
+        }
+        return "";
+      };
+  
+      return { toUsername, sendRequest };
     },
   });
   </script>
   
   <style scoped>
-  /* Add styling here if needed */
+  /* Add your styling here */
   </style>
   
