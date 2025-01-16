@@ -11,99 +11,127 @@ interface User {
   email: string;
   date_of_birth: string;
   hobbies: Hobby[];
-  password?: string;
-}
-
-interface FriendRequest {
-  id: number;
-  from_user: { id: number; name: string };
-  to_user: { id: number; name: string };
-  is_accepted: boolean;
-  created_at: string;
 }
 
 export const useUserStore = defineStore("userStore", {
-
   state: () => ({
-    user: {} as User,  // Store the current user
-    hobbies: [] as Hobby[],  // Store all available hobbies for dropdown
-    csrfToken: "",  // Add csrfToken to the state
-    friendRequests: [] as FriendRequest[], // Store pending friend requests
+    user: {} as User, // Authenticated user's data
+    hobbies: [] as Hobby[], // Available hobbies
+    csrfToken: "", // CSRF token for secure requests
+    isAuthenticated: false, // Track user's authentication status
+    isLoading: false, // Loading state for API calls
   }),
+
   actions: {
-    async fetchCurrentUser() {
-      try {
-        const response = await fetch("/user/current/", {
-          method: "GET",
-          credentials: "include", // Important for session-based authentication
-        });
-        if (!response.ok) throw new Error("Failed to fetch current user");
-        this.user = await response.json();
-      } catch (error) {
-        console.error("Error fetching current user:", error);
+    /**
+     * Fetch the CSRF token from the meta tag.
+     */
+    async fetchCsrfToken() {
+      const tokenElement = document.querySelector('meta[name="csrf-token"]');
+      if (tokenElement) {
+        this.csrfToken = tokenElement.getAttribute("content") || "";
+        console.log("CSRF token fetched successfully:", this.csrfToken);
+      } else {
+        console.error("CSRF token not found in meta tag.");
+        this.csrfToken = "";
       }
     },
-    async fetchHobbies() {
+
+    /**
+     * Fetch the currently authenticated user's details.
+     */
+    async fetchCurrentUser() {
+      this.isLoading = true;
       try {
-        const response = await fetch("/hobbies/");
-        if (!response.ok) throw new Error("Failed to fetch hobbies");
+        const response = await fetch("http://localhost:8000/user/current/", {
+          method: "GET",
+          credentials: "include", // Ensure cookies are included
+        });
+
+        const contentType = response.headers.get("content-type");
+        if (!response.ok || !contentType?.includes("application/json")) {
+          const errorText = await response.text();
+          console.error("Failed to fetch current user:", errorText);
+          throw new Error("Non-JSON response received. Check if user is authenticated.");
+        }
+
         const data = await response.json();
-        this.hobbies = data.hobbies; // Unwrap hobbies list
-        console.log("Fetched hobbies:", this.hobbies); // Debug output
+        this.user = data;
+        this.isAuthenticated = true;
+        console.log("User fetched successfully:", this.user);
+      } catch (error) {
+        this.isAuthenticated = false;
+        console.error("Error fetching current user:", error);
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    /**
+     * Fetch all available hobbies.
+     */
+    async fetchHobbies() {
+      this.isLoading = true;
+      try {
+        const response = await fetch("http://localhost:8000/hobbies/", {
+          method: "GET",
+          credentials: "include", // Ensure cookies are included
+        });
+
+        const contentType = response.headers.get("content-type");
+        if (!response.ok || !contentType?.includes("application/json")) {
+          const errorText = await response.text();
+          console.error("Failed to fetch hobbies:", errorText);
+          throw new Error("Non-JSON response received.");
+        }
+
+        const data = await response.json();
+        this.hobbies = data.hobbies || [];
+        console.log("Hobbies fetched successfully:", this.hobbies);
       } catch (error) {
         console.error("Error fetching hobbies:", error);
+      } finally {
+        this.isLoading = false;
       }
     },
 
-    async fetchCsrfToken() {
-      try {
-        const tokenElement = document.querySelector('meta[name="csrf-token"]');
-        if (tokenElement) {
-          this.csrfToken = tokenElement.getAttribute("content") || "";
-          console.log("CSRF token fetched:", this.csrfToken);
-        } else {
-          console.error("CSRF token meta tag not found.");
-        }
-      } catch (error) {
-        console.error("Error fetching CSRF token:", error);
+    /**
+     * Handle a failed request gracefully.
+     */
+    handleFailedRequest(response: Response) {
+      if (response.status === 403 || response.status === 401) {
+        console.error("Unauthorized access. Redirecting to login.");
+        this.isAuthenticated = false;
+      } else {
+        console.error(`Unexpected response: ${response.status} - ${response.statusText}`);
       }
     },
 
-    async fetchFriendRequests() {
-      try {
-        const response = await fetch("/friend-requests/", {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-        });
-    
-        if (!response.ok) {
-          console.error("Failed to fetch friend requests:", response.status, response.statusText);
-          throw new Error("Failed to fetch friend requests");
-        }
-    
-        const data = await response.json();
-        console.log("Fetched friend requests:", data.pending_requests); // Debugging
-        this.friendRequests = data.pending_requests; // Update the store
-        console.log("Updated friendRequests state:", this.friendRequests); // Debugging
-      } catch (error) {
-        console.error("Error fetching friend requests:", error);
-      }
-    },
-
+    /**
+     * Update the user's profile.
+     */
     async updateUserProfile(updatedUser: Partial<User>) {
       try {
-        console.log("CSRF Token:", this.csrfToken);
-        console.log("Sending data:", updatedUser);
-        const response = await fetch(`/user/${this.user.id}`, {
+        const response = await fetch(`http://localhost:8000/user/${this.user.id}/`, {
           method: "PUT",
-          headers: { 
+          headers: {
             "Content-Type": "application/json",
-            "X-CSRFToken": this.csrfToken, // Send CSRF token for security 
-           },
+            "X-CSRFToken": this.csrfToken,
+          },
           body: JSON.stringify(updatedUser),
         });
-        if (!response.ok) throw new Error("Failed to update profile");
-        this.user = await response.json();  // Update store with the saved profile data
+
+        const contentType = response.headers.get("content-type");
+        if (!response.ok || !contentType?.includes("application/json")) {
+          this.handleFailedRequest(response);
+          const errorText = await response.text();
+          console.error("Failed to update profile:", errorText);
+          throw new Error("Non-JSON response received.");
+        }
+
+        const data = await response.json();
+        this.user = data;
+        console.log("Profile updated successfully:", this.user);
       } catch (error) {
         console.error("Error updating user profile:", error);
       }
