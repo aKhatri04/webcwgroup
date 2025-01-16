@@ -7,7 +7,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import MainPage from '../pages/MainPage.vue';
 import OtherPage from '../pages/OtherPage.vue';
 
-import ProfilePage from '../pages/ProfilePage.vue';
+import ProfilePage from '../pages/profilePage.vue';
 import SendFriendRequest from '../pages/SendFriendRequest.vue';
 import FriendRequests from '../pages/FriendRequests.vue';
 
