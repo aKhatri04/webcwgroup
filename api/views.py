@@ -250,23 +250,6 @@ def current_user_api(request):
 
             user.save()
 
-            # Handle hobbies if provided
-            if "hobbies" in data:
-                user.userhobby_set.all().delete()
-                for hobby_data in data["hobbies"]:
-                    hobby, _ = Hobby.objects.get_or_create(name=hobby_data["name"])
-                    UserHobby.objects.create(user=user, hobby=hobby)
-
-            # Return the updated user data with hobbies
-            hobbies = [{"id": hobby.id, "name": hobby.name} for hobby in user.hobbies.all()]
-            updated_user_data = {
-                "id": user.id,
-                "name": user.name,
-                "email": user.email,
-                "date_of_birth": str(user.date_of_birth),
-                "hobbies": hobbies
-            }
-
             return JsonResponse(updated_user_data)
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=400)

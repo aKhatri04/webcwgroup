@@ -11,7 +11,7 @@
     export default defineComponent({
         data() {
             return {
-                title: "Main Page",
+                title: "Profile Page",
             }
         }
     })

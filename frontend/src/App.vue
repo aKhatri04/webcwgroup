@@ -3,7 +3,7 @@
         <div>
             <router-link
                 class=""
-                :to="{name: 'Main Page'}"
+                :to="{name: 'Profile Page'}"
             >
                 Main Page
             </router-link>
@@ -14,12 +14,7 @@
             >
                 Other Page
             </router-link>
-            <router-link
-                class=""
-                :to="{name: 'Profile Page'}"
-            >
-                Profile Page
-            </router-link>
+
         </div>
         <RouterView class="flex-shrink-0" />
     </main>

@@ -92,137 +92,120 @@
   </template>
   
   <script lang="ts">
-  import { defineComponent, ref, onMounted } from "vue";
-  import { useUserStore } from "../stores/userStore";
+//   import { defineComponent, ref, onMounted } from "vue";
+// //   import { useUserStore } from "../stores/userStore";
   
-  export default defineComponent({
+//   export default defineComponent({
+    
+//     computed: {
+//     csrfToken(): string {
+//       const cookies = document.cookie.split('; ');
+//       const csrfCookie = cookies.find((cookie) => cookie.startsWith('csrftoken='));
+//       return csrfCookie ? csrfCookie.split('=')[1] : '';
+//     },
+//   },
 
-    setup() {
-      const userStore = useUserStore();
-      const editing = ref(true);
-      const selectedHobby = ref<{ id: number; name: string } | null>(null);
-      const newHobbyName = ref("");
-      const updatedUser = ref({ ...userStore.user });
-      const hobbies = ref<{ id: number; name: string }[]>([]);
-      const loading = ref(true);
+//     setup() {
+//       const userStore = useUserStore();
+//       const editing = ref(true);
+//       const selectedHobby = ref<{ id: number; name: string } | null>(null);
+//       const newHobbyName = ref("");
+//       const updatedUser = ref({ ...userStore.user });
+//       const hobbies = ref<{ id: number; name: string }[]>([]);
+//       const loading = ref(true);
   
-      onMounted(() => {
-        userStore.fetchCsrfToken();
-        userStore.fetchCurrentUser();
-      })
-      // Fetch current user and hobbies when mounted
-      onMounted(async () => {
-        try { 
-            console.log(1); 
-            await userStore.fetchCurrentUser(); 
-            console.log(2); 
-            await userStore.fetchHobbies(); 
-            console.log(3); 
-            console.log("User and hobbies fetched successfully!");
+//       onMounted(() => {
+//         userStore.fetchCsrfToken();
+//         userStore.fetchCurrentUser();
+//       })
+//       // Fetch current user and hobbies when mounted
+//       onMounted(async () => {
+//         try { 
+//             console.log(1); 
+//             await userStore.fetchCurrentUser(); 
+//             console.log(2); 
+//             await userStore.fetchHobbies(); 
+//             console.log(3); 
+//             console.log("User and hobbies fetched successfully!");
 
-            updatedUser.value = { ...userStore.user }; 
-            hobbies.value = userStore.hobbies;
-            console.log("Hobbies loaded into component:", hobbies.value);
+//             updatedUser.value = { ...userStore.user }; 
+//             hobbies.value = userStore.hobbies;
+//             console.log("Hobbies loaded into component:", hobbies.value);
             
-        } 
-        catch (error) { 
-            console.error("Error loading user data:", error); 
-        } finally { 
-            loading.value = false; 
-        }
-      });
+//         } 
+//         catch (error) { 
+//             console.error("Error loading user data:", error); 
+//         } finally { 
+//             loading.value = false; 
+//         }
+//       });
   
-      const greet = () => {
-        return `Welcome to your profile, ${userStore.user?.name || "User"}!`;
-      };
+//       const greet = () => {
+//         return `Welcome to your profile, ${userStore.user?.name || "User"}!`;
+//       };
 
 
-      const editProfile = () => {
-        editing.value = true;
-        updatedUser.value = { ...userStore.user };
-      };
+//       const editProfile = () => {
+//         editing.value = true;
+//         updatedUser.value = { ...userStore.user };
+//       };
   
-      const cancelEdit = () => {
-        editing.value = false;
-      };
+//       const cancelEdit = () => {
+//         editing.value = false;
+//       };
   
-      const addNewHobby = () => {
-        if (newHobbyName.value.trim()) {
-          updatedUser.value.hobbies.push({ id: Date.now(), name: newHobbyName.value });
-          newHobbyName.value = "";
-        }
-      };
+//       const addNewHobby = () => {
+//         if (newHobbyName.value.trim()) {
+//           updatedUser.value.hobbies.push({id: Date.now(), name: newHobbyName.value });
+//           newHobbyName.value = "";
+//         }
+//       };
   
-      const addExistingHobby = () => {
-        if (selectedHobby.value && !updatedUser.value.hobbies.some((hobby) => hobby.id === selectedHobby.value!.id)) {
-          updatedUser.value.hobbies.push({ ...selectedHobby.value });
-          selectedHobby.value = null;
-        }
-      };
+//       const addExistingHobby = () => {
+//         if (selectedHobby.value && !updatedUser.value.hobbies.some((hobby) => hobby.id === selectedHobby.value!.id)) {
+//           updatedUser.value.hobbies.push({ ...selectedHobby.value });
+//           selectedHobby.value = null;
+//         }
+//       };
   
-      const removeHobby = (hobby: { id: number; name: string }) => {
-        updatedUser.value.hobbies = updatedUser.value.hobbies.filter((h) => h.id !== hobby.id);
-      };
+//       const removeHobby = (hobby: { id: number; name: string }) => {
+//         updatedUser.value.hobbies = updatedUser.value.hobbies.filter((h) => h.id !== hobby.id);
+//       };
   
-    const saveChanges = async () => {
-        try {
-            updatedUser.value.hobbies = updatedUser.value.hobbies.map((hobby) => ({
-                id: hobby.id,
-                name: hobby.name,
-            }));
+//     const saveChanges = async () => {
+//         try {
+//             updatedUser.value.hobbies = updatedUser.value.hobbies.map((hobby) => ({
+//                 id: hobby.id,
+//                 name: hobby.name,
+//             }));
 
-            await userStore.updateUserProfile(updatedUser.value);
-            alert("Profile updated successfully!");
-            editing.value = false;
-        } catch (error) {
-            console.error("Failed to update profile:", error);
-            alert("An error occurred while saving changes.");
-        }
-        };
+//             await userStore.updateUserProfile(updatedUser.value);
+//             alert("Profile updated successfully!");
+//             editing.value = false;
+//         } catch (error) {
+//             console.error("Failed to update profile:", error);
+//             alert("An error occurred while saving changes.");
+//         }
+//         };
 
   
-      return {
-        editing,
-        selectedHobby,
-        newHobbyName,
-        updatedUser,
-        loading,
-        user: userStore.user,
-        hobbies,
-        greet,
-        editProfile,
-        cancelEdit,
-        addNewHobby,
-        addExistingHobby,
-        removeHobby,
-        saveChanges,
-      };
-    },
-  });
-  </script>
-  
-  <style scoped>
-  .container {
-    max-width: 800px;
-    margin: auto;
-  }
-  .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-  .modal-dialog {
-    background-color: white;
-    border-radius: 10px;
-    padding: 1rem;
-    width: 100%;
-    max-width: 600px;
-  }
-  </style>
+//       return {
+//         editing,
+//         selectedHobby,
+//         newHobbyName,
+//         updatedUser,
+//         loading,
+//         user: userStore.user,
+//         hobbies,
+//         greet,
+//         editProfile,
+//         cancelEdit,
+//         addNewHobby,
+//         addExistingHobby,
+//         removeHobby,
+//         saveChanges,
+//       };
+//     },
+//   });
+//   </script>
   
