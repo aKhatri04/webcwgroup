@@ -47,22 +47,18 @@ class CustomUser(AbstractUser):
                 "name":self.name, 
                 "email":self.email, 
                 "date_of_birth": str(self.date_of_birth), 
-                "hobbies":[{"id": hobby.id, "name": hobby.name} for hobby in self.hobbies.all()],
+                "user_hobby":[f"{user_hobby.hobby.name}" for user_hobby in self.userhobby_set.all()],
+                #COULD YOU ASK MITHY WHICH ONE OF THESE WOULD BE RIGHT 
+                #"user_hobbies": [user_hobby.as_dict() for user_hobby in self.userhobby_set.all()],
+                # "hobbies":[{"id": hobby.id, "name": hobby.name} for hobby in self.hobbies.all()],
                 "api": reverse('user_api', args=[self.id]),
                 }
 
-    def current_as_dict(self):
-        return {"id":self.id, 
-                "name":self.user, 
-                "email":self.hobby, 
-                "date_of_birth":self.date_added, 
-                "hobbies":[[hobby.id, hobby.name] for hobby in self.hobbies.all()],
-                "password":self.password,
-                }
+
         
 class UserHobby(models.Model):
     
-    user = models.ForeignKey('CustomUser', on_delete=models.CASCADE)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     hobby = models.ForeignKey(Hobby, on_delete=models.CASCADE)
 
     def __str__(self):

@@ -3,7 +3,7 @@
         <div>
             <router-link
                 class=""
-                :to="{name: 'Profile Page'}"
+                :to="{name: 'Main Page'}"
             >
                 Main Page
             </router-link>
