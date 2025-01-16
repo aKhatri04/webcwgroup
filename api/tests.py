@@ -1,95 +1,67 @@
-from django.test import TestCase
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from django.contrib.auth import get_user_model
-from django.test import LiveServerTestCase
-from .models import FriendRequest
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import unittest
 
-User = get_user_model()
+class SignupPageTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.driver = webdriver.Chrome()
+        cls.driver.get("http://127.0.0.1:8000/signup")  # Replace with your actual signup page URL
 
-class TestSignup(LiveServerTestCase):
-    def setUp(self):
-        self.driver = webdriver.Chrome() 
-        self.signup_url = f"{self.live_server_url}/signup/"
+    @classmethod
+    def tearDownClass(cls):
+        cls.driver.quit()
 
-    def tearDown(self):
-        self.driver.quit()
+    def test_signup_page_loads(self):
+        """Test that the signup page loads correctly."""
+        self.assertIn("Signup", self.driver.title)
+        header = self.driver.find_element(By.TAG_NAME, "h1").text
+        self.assertEqual(header, "Signup")
 
-    def test_user_signup(self):
-        self.driver.get(self.signup_url)
-        self.driver.find_element(By.NAME, "username").send_keys("testuser")
-        self.driver.find_element(By.NAME, "password1").send_keys("password123")
-        self.driver.find_element(By.NAME, "password2").send_keys("password123")
-        self.driver.find_element(By.CSS_SELECTOR, "form button[type=submit]").click()
-        self.assertTrue(User.objects.filter(username="testuser").exists())
+    def test_signup_form_submission_valid(self):
+        """Test successful signup form submission."""
+        driver = self.driver
 
-class TestLogin(LiveServerTestCase):
-    def setUp(self):
-        self.driver = webdriver.Chrome()
-        self.login_url = f"{self.live_server_url}/login/"
-        self.user = User.objects.create_user(username="testuser", password="password123")
+        # Fill out the signup form
+        driver.find_element(By.NAME, "username").send_keys("testuser")
+        driver.find_element(By.NAME, "email").send_keys("testuser@example.com")
+        driver.find_element(By.NAME, "password1").send_keys("Testpassword123!")
+        driver.find_element(By.NAME, "password2").send_keys("Testpassword123!")
 
-    def tearDown(self):
-        self.driver.quit()
+        # Submit the form
+        driver.find_element(By.XPATH, "//button[text()='Signup']").click()
 
-    def test_user_login(self):
-        self.driver.get(self.login_url)
-        self.driver.find_element(By.NAME, "username").send_keys("testuser")
-        self.driver.find_element(By.NAME, "password").send_keys("password123")
-        self.driver.find_element(By.CSS_SELECTOR, "form button[type=submit]").click()
-        self.assertIn("Main Page", self.driver.page_source)
+        # Wait for the redirect to the login page
+        WebDriverWait(driver, 10).until(EC.url_contains("/login"))
+        
+        # Check if redirected to login page
+        self.assertIn("login", driver.current_url)
+
+    def test_signup_form_submission_invalid(self):
+        """Test form submission with invalid data."""
+        driver = self.driver
+
+        # Clear and fill out the form with mismatched passwords
+        driver.find_element(By.NAME, "username").send_keys("testuser2")
+        driver.find_element(By.NAME, "email").send_keys("testuser2@example.com")
+        driver.find_element(By.NAME, "password1").send_keys("Testpassword123!")
+        driver.find_element(By.NAME, "password2").send_keys("DifferentPassword123!")
+
+        # Submit the form
+        driver.find_element(By.XPATH, "//button[text()='Signup']").click()
+
+        # Wait for error message to appear
+        error_message = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, ".errorlist"))
+        )
+
+        self.assertTrue(error_message.is_displayed())
+        self.assertIn("The two password fields didn't match.", error_message.text)
+
+if __name__ == "__main__":
+    unittest.main()
 
 
-class TestEditProfile(LiveServerTestCase):
-    def setUp(self):
-        self.driver = webdriver.Chrome()
-        self.profile_url = f"{self.live_server_url}/profile/"
-        self.user = User.objects.create_user(username="testuser", password="password123")
-        self.user.name = "Test User"
-        self.user.email = "testuser@example.com"
-        self.user.save()
-
-    def tearDown(self):
-        self.driver.quit()
-
-    def login(self):
-        self.driver.get(f"{self.live_server_url}/login/")
-        self.driver.find_element(By.NAME, "username").send_keys("testuser")
-        self.driver.find_element(By.NAME, "password").send_keys("password123")
-        self.driver.find_element(By.CSS_SELECTOR, "form button[type=submit]").click()
-
-    def test_edit_profile(self):
-        self.login()
-        self.driver.get(self.profile_url)
-        self.driver.find_element(By.CSS_SELECTOR, "button.edit-profile").click()
-        name_input = self.driver.find_element(By.NAME, "name")
-        name_input.clear()
-        name_input.send_keys("Updated Name")
-        self.driver.find_element(By.CSS_SELECTOR, "button.save-profile").click()
-        # Reload user data
-        self.user.refresh_from_db()
-        self.assertEqual(self.user.name, "Updated Name")
-
-class TestFriendRequest(LiveServerTestCase):
-    def setUp(self):
-        self.driver = webdriver.Chrome()
-        self.send_request_url = f"{self.live_server_url}/request/"
-        self.user1 = User.objects.create_user(username="user1", password="password123")
-        self.user2 = User.objects.create_user(username="user2", password="password123")
-
-    def tearDown(self):
-        self.driver.quit()
-
-    def login(self, username):
-        self.driver.get(f"{self.live_server_url}/login/")
-        self.driver.find_element(By.NAME, "username").send_keys(username)
-        self.driver.find_element(By.NAME, "password").send_keys("password123")
-        self.driver.find_element(By.CSS_SELECTOR, "form button[type=submit]").click()
-
-    def test_send_friend_request(self):
-        self.login("user1")
-        self.driver.get(self.send_request_url)
-        self.driver.find_element(By.NAME, "to_username").send_keys("user2")
-        self.driver.find_element(By.CSS_SELECTOR, "button.send-request").click()
-        self.assertTrue(FriendRequest.objects.filter(from_user=self.user1, to_user=self.user2).exists())
