@@ -34,7 +34,7 @@ export const useUserStore = defineStore("userStore", {
   actions: {
     async fetchCurrentUser() {
       try {
-        const response = await fetch("/user/current/", {
+        const response = await fetch("http://localhost:8000/user/current/", {
           method: "GET",
           credentials: "include",
         });
@@ -46,7 +46,10 @@ export const useUserStore = defineStore("userStore", {
     },
     async fetchHobbies() {
       try {
-        const response = await fetch("/hobbies/");
+        const response = await fetch("http://localhost:8000/hobbies/", {
+          method: "GET",
+          credentials: "include",
+        });
         if (!response.ok) throw new Error("Failed to fetch hobbies");
         const data = await response.json();
         this.hobbies = data.hobbies;
@@ -70,7 +73,7 @@ export const useUserStore = defineStore("userStore", {
 
     async fetchFriendRequests() {
       try {
-        const response = await fetch("/friend-requests/", {
+        const response = await fetch("http://localhost:8000/friend-requests/", {
           method: "GET",
           credentials: "include",
         });
@@ -91,7 +94,7 @@ export const useUserStore = defineStore("userStore", {
 
     async updateUserProfile(updatedUser: Partial<User>) {
       try {
-        const response = await fetch(`/user/${this.user.id}`, {
+        const response = await fetch(`http://localhost:8000/user/${this.user.id}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
