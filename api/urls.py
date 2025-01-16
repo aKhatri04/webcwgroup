@@ -45,6 +45,7 @@ urlpatterns = [
     path('friend-request/send/', send_friend_request, name='send_friend_request'),
     path('friend-requests/', view_friend_requests, name='view_friend_requests'),
     path('friend-request/handle/', handle_friend_request, name='handle_friend_request'),
+    
     path('user/current/', views.current_user_api, name='current_user_api'),
 ]
 

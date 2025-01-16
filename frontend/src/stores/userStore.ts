@@ -28,14 +28,15 @@ export const useUserStore = defineStore("userStore", {
     user: {} as User,  // Store the current user
     hobbies: [] as Hobby[],  // Store all available hobbies for dropdown
     csrfToken: "",  // Add csrfToken to the state
-    friendRequests: [] as FriendRequest[], // Store pending friend requests
+    friendRequests: [] as FriendRequest[], // Use the FriendRequest interface here
+
   }),
   actions: {
     async fetchCurrentUser() {
       try {
         const response = await fetch("/user/current/", {
           method: "GET",
-          credentials: "include", // Important for session-based authentication
+          credentials: "include",
         });
         if (!response.ok) throw new Error("Failed to fetch current user");
         this.user = await response.json();
@@ -48,13 +49,11 @@ export const useUserStore = defineStore("userStore", {
         const response = await fetch("/hobbies/");
         if (!response.ok) throw new Error("Failed to fetch hobbies");
         const data = await response.json();
-        this.hobbies = data.hobbies; // Unwrap hobbies list
-        console.log("Fetched hobbies:", this.hobbies); // Debug output
+        this.hobbies = data.hobbies;
       } catch (error) {
         console.error("Error fetching hobbies:", error);
       }
     },
-
     async fetchCsrfToken() {
       try {
         const tokenElement = document.querySelector('meta[name="csrf-token"]');
@@ -73,37 +72,35 @@ export const useUserStore = defineStore("userStore", {
       try {
         const response = await fetch("/friend-requests/", {
           method: "GET",
-          headers: { "Content-Type": "application/json" },
+          credentials: "include",
         });
-    
-        if (!response.ok) {
-          console.error("Failed to fetch friend requests:", response.status, response.statusText);
-          throw new Error("Failed to fetch friend requests");
+  
+        if (response.ok) {
+          const data = await response.json();
+          console.log("Fetched friend requests:", data.pending_requests);
+          this.friendRequests = [...data.pending_requests]; // Trigger reactivity
+        } else {
+          console.error("Failed to fetch friend requests.");
         }
-    
-        const data = await response.json();
-        console.log("Fetched friend requests:", data.pending_requests); // Debugging
-        this.friendRequests = data.pending_requests; // Update the store
-        console.log("Updated friendRequests state:", this.friendRequests); // Debugging
       } catch (error) {
         console.error("Error fetching friend requests:", error);
       }
     },
+    
+    
 
     async updateUserProfile(updatedUser: Partial<User>) {
       try {
-        console.log("CSRF Token:", this.csrfToken);
-        console.log("Sending data:", updatedUser);
         const response = await fetch(`/user/${this.user.id}`, {
           method: "PUT",
-          headers: { 
+          headers: {
             "Content-Type": "application/json",
-            "X-CSRFToken": this.csrfToken, // Send CSRF token for security 
-           },
+            "X-CSRFToken": this.csrfToken,
+          },
           body: JSON.stringify(updatedUser),
         });
         if (!response.ok) throw new Error("Failed to update profile");
-        this.user = await response.json();  // Update store with the saved profile data
+        this.user = await response.json();
       } catch (error) {
         console.error("Error updating user profile:", error);
       }
