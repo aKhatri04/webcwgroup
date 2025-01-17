@@ -111,6 +111,11 @@ def hobby_api(request,hobby_id):
 @csrf_exempt
 @login_required
 def users_api(request):
+    # If the request is for the frontend (no API parameters)
+    if "age_min" not in request.GET and "age_max" not in request.GET:
+        return render(request, 'api/spa/index.html')
+
+    # API logic (JSON response)
     if request.method == "GET":
         try:
             # Query parameters
@@ -118,7 +123,6 @@ def users_api(request):
             age_max = int(request.GET.get("age_max", 120))
             page_number = int(request.GET.get("page", 1))
 
-            # Ensure date_of_birth is valid for filtering
             today = date.today()
             users = CustomUser.objects.exclude(date_of_birth__isnull=True).annotate(
                 age=today.year - F("date_of_birth__year"),
@@ -127,7 +131,7 @@ def users_api(request):
                 age__lte=age_max,
             )
 
-            # Calculate shared hobbies
+            # Process user data
             user_list = []
             for user in users:
                 shared_hobbies_with = []
@@ -140,7 +144,6 @@ def users_api(request):
                             "shared_count": shared_hobbies.count(),
                             "shared_hobbies": [{"id": hobby.id, "name": hobby.name} for hobby in shared_hobbies]
                         })
-                # Sort by the number of shared hobbies in descending order
                 shared_hobbies_with.sort(key=lambda x: x["shared_count"], reverse=True)
 
                 user_list.append({
@@ -153,11 +156,9 @@ def users_api(request):
                     "shared_hobbies": shared_hobbies_with,
                 })
 
-            # Pagination
             paginator = Paginator(user_list, 10)
             page_obj = paginator.get_page(page_number)
 
-            # Response
             return JsonResponse({
                 "users": list(page_obj.object_list),
                 "total_pages": paginator.num_pages,
@@ -166,10 +167,10 @@ def users_api(request):
             }, status=200)
 
         except Exception as e:
-            print("Error:", str(e))  # Debugging
             return JsonResponse({"error": str(e)}, status=500)
 
     return JsonResponse({"error": "Unsupported HTTP method"}, status=405)
+
     
 @csrf_exempt
 @login_required

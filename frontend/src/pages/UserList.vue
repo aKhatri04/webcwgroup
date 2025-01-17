@@ -95,11 +95,39 @@
   <script lang="ts">
   import { defineComponent, ref } from "vue";
   
+  // Define TypeScript interfaces for your data
+  interface Hobby {
+    id: number;
+    name: string;
+  }
+  
+  interface SharedHobby {
+    id: number;
+    name: string;
+    shared_count: number;
+    shared_hobbies: Hobby[];
+  }
+  
+  interface User {
+    id: number;
+    name: string;
+    email: string;
+    date_of_birth: string;
+    hobbies: Hobby[];
+    shared_hobbies: SharedHobby[];
+  }
+  
+  interface LoggedInUser {
+    name: string;
+    email: string;
+  }
+  
   export default defineComponent({
     name: "UserList",
     setup() {
-      const users = ref([]);
-      const loggedInUser = ref(null);
+      // Properly type and initialize the data properties
+      const users = ref<User[]>([]);
+      const loggedInUser = ref<LoggedInUser | null>(null);
       const pagination = ref({ total_pages: 1, current_page: 1 });
       const filters = ref({ ageMin: 0, ageMax: 100 });
   
@@ -107,7 +135,7 @@
         try {
           const response = await fetch("http://localhost:8000/user/current/", { credentials: "include" });
           if (!response.ok) throw new Error("Failed to fetch logged-in user");
-          loggedInUser.value = await response.json();
+          loggedInUser.value = (await response.json()) as LoggedInUser;
         } catch (error) {
           console.error("Error fetching logged-in user:", error);
         }
@@ -122,7 +150,7 @@
           );
           if (!response.ok) throw new Error("Failed to fetch users");
           const data = await response.json();
-          users.value = data.users;
+          users.value = data.users as User[];
           pagination.value.total_pages = data.total_pages;
           pagination.value.current_page = data.current_page;
         } catch (error) {
