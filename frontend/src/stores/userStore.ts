@@ -25,10 +25,10 @@ interface FriendRequest {
 export const useUserStore = defineStore("userStore", {
 
   state: () => ({
-    user: {} as User,  // Store the current user
-    hobbies: [] as Hobby[],  // Store all available hobbies for dropdown
-    csrfToken: "",  // Add csrfToken to the state
-    friendRequests: [] as FriendRequest[], // Use the FriendRequest interface here
+    user: {} as User,
+    hobbies: [] as Hobby[],
+    csrfToken: "",
+    friendRequests: [] as FriendRequest[],
 
   }),
   actions: {
@@ -81,7 +81,7 @@ export const useUserStore = defineStore("userStore", {
         if (response.ok) {
           const data = await response.json();
           console.log("Fetched friend requests:", data.pending_requests);
-          this.friendRequests = [...data.pending_requests]; // Trigger reactivity
+          this.friendRequests = [...data.pending_requests];
         } else {
           console.error("Failed to fetch friend requests.");
         }
@@ -89,7 +89,6 @@ export const useUserStore = defineStore("userStore", {
         console.error("Error fetching friend requests:", error);
       }
     },
-    
     
 
     async updateUserProfile(updatedUser: Partial<User>) {

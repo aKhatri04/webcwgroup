@@ -90,7 +90,6 @@
 <script lang="ts">
 import { defineComponent, ref } from "vue";
 
-// Define TypeScript interfaces for your data
 interface Hobby {
   id: number;
   name: string;

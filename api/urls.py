@@ -28,7 +28,7 @@ from . import views
 urlpatterns = [
     path('spa/index.html', main_spa),
 
-    # API entry points should be defined here
+    
 
     path('login/', views.user_login, name='login'),
     path('signup/', views.user_signup, name='signup'),
@@ -41,7 +41,7 @@ urlpatterns = [
     path('user_hobbies/', user_hobbies_api, name='user hobbies_api'),
     path('user_hobby/<int:user_hobby_id>', user_hobbies_api, name='user_hobby_api'),
 
-    # Friend Request API
+    
     path('friend-request/send/', send_friend_request, name='send_friend_request'),
     path('friend-requests/', view_friend_requests, name='view_friend_requests'),
     path('friend-request/handle/', handle_friend_request, name='handle_friend_request'),
