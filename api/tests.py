@@ -139,7 +139,7 @@ class EditUserTest(unittest.TestCase):
         )
         WebDriverWait(driver, 30).until(
             EC.text_to_be_present_in_element((By.XPATH, "//p[contains(text(), 'Email: updatedemail@example.com')]"),
-                                             "updatedemail123@example.com")
+                                             "updatedemail@example.com")
         )
         WebDriverWait(driver, 30).until(
             EC.text_to_be_present_in_element((By.XPATH, "//p[contains(text(), 'Date of Birth: 2000-01-01')]"),
