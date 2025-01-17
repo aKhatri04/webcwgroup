@@ -10,10 +10,14 @@ from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 
 
-
+from .models import CustomUser, Hobby
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.middleware.csrf import get_token
+
+from django.core.paginator import Paginator
+from django.db.models import Count, F, Q
+from datetime import date
 
 User = get_user_model()
 
@@ -105,24 +109,68 @@ def hobby_api(request,hobby_id):
 
 #User API
 @csrf_exempt
+@login_required
 def users_api(request):
-    if request.method == "POST":
-        POST = json.loads(request.body)
-        user = CustomUser.objects.create(
-            username = POST['username'],
-            name = POST['name'],
-            email = POST['email'],
-            date_of_birth = POST['date_of_birth'],
-            password = POST['password']
-        )
-        return JsonResponse(user.as_dict())
-    
-    return JsonResponse({
-        "users": [
-            user.as_dict() 
-            for user in CustomUser.objects.all()
-            ]
-    })
+    # If the request is for the frontend (no API parameters)
+    if "age_min" not in request.GET and "age_max" not in request.GET:
+        return render(request, 'api/spa/index.html')
+
+    # API logic (JSON response)
+    if request.method == "GET":
+        try:
+            # Query parameters
+            age_min = int(request.GET.get("age_min", 0))
+            age_max = int(request.GET.get("age_max", 120))
+            page_number = int(request.GET.get("page", 1))
+
+            today = date.today()
+            users = CustomUser.objects.exclude(date_of_birth__isnull=True).annotate(
+                age=today.year - F("date_of_birth__year"),
+            ).filter(
+                age__gte=age_min,
+                age__lte=age_max,
+            )
+
+            # Process user data
+            user_list = []
+            for user in users:
+                shared_hobbies_with = []
+                for other_user in users.exclude(id=user.id):
+                    shared_hobbies = user.hobbies.filter(id__in=other_user.hobbies.all())
+                    if shared_hobbies.exists():
+                        shared_hobbies_with.append({
+                            "id": other_user.id,
+                            "name": other_user.name,
+                            "shared_count": shared_hobbies.count(),
+                            "shared_hobbies": [{"id": hobby.id, "name": hobby.name} for hobby in shared_hobbies]
+                        })
+                shared_hobbies_with.sort(key=lambda x: x["shared_count"], reverse=True)
+
+                user_list.append({
+                    "id": user.id,
+                    "name": user.name,
+                    "email": user.email,
+                    "date_of_birth": user.date_of_birth,
+                    "age": user.age,
+                    "hobbies": [{"id": hobby.id, "name": hobby.name} for hobby in user.hobbies.all()],
+                    "shared_hobbies": shared_hobbies_with,
+                })
+
+            paginator = Paginator(user_list, 10)
+            page_obj = paginator.get_page(page_number)
+
+            return JsonResponse({
+                "users": list(page_obj.object_list),
+                "total_pages": paginator.num_pages,
+                "current_page": page_obj.number,
+                "total_users": paginator.count,
+            }, status=200)
+
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+
+    return JsonResponse({"error": "Unsupported HTTP method"}, status=405)
+
     
 @csrf_exempt
 @login_required

@@ -21,7 +21,7 @@ from django.http import HttpResponse
 
 from .views import hobby_api, hobbies_api, users_api, user_api, user_hobbies_api, main_spa, send_friend_request, view_friend_requests, handle_friend_request
 
-from .views import main_spa, csrf_token_view
+from .views import main_spa, csrf_token_view 
 
 from . import views
 
